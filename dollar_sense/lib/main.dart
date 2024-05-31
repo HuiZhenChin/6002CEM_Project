@@ -4,6 +4,7 @@ import 'package:dollar_sense/home_page_card.dart';
 import 'package:dollar_sense/main_card.dart';
 import 'package:dollar_sense/navigation_bar.dart';
 import 'package:dollar_sense/add_expense.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() {
   runApp(MyApp());
