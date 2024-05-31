@@ -1,30 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dollar_sense/constants.dart';
-import 'package:dollar_sense/authentication_bloc.dart';
-import 'package:dollar_sense/launcher_screen.dart';
-import 'package:dollar_sense/loading_cubit.dart';
 import 'app_main_page.dart'; // Import the HomePage widget
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-void main() {
-  runApp(MultiRepositoryProvider(
-    providers: [
-      RepositoryProvider(create: (_) => AuthenticationBloc()),
-      RepositoryProvider(create: (_) => LoadingCubit()),
-    ],
-    child: const MyApp(),
-  ));
+void main() async {
+  runApp(MyLogin());
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: 'AIzaSyDi5bSQewZitC4aTXrsvag9BBoh8CjZe5U',
+      appId: '1:1092645709341:android:899bf97d577cd909ad08f4',
+      messagingSenderId: '1092645709341',
+      projectId: 'dollarsense-c1f43',
+    ),
+  );
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class MyLogin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
