@@ -128,7 +128,7 @@ class _LoginFormState extends State<LoginForm> {
         // Proceed with login if email and password match
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MyAccount()),
+          MaterialPageRoute(builder: (context) => MyApp()),
         );
       } catch (e) {
         print(e);

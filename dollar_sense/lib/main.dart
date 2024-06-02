@@ -4,6 +4,8 @@ import 'package:dollar_sense/home_page_card.dart';
 import 'package:dollar_sense/main_card.dart';
 import 'package:dollar_sense/navigation_bar.dart';
 import 'package:dollar_sense/add_expense.dart';
+import 'add_expense_view_model.dart';
+import 'add_expense_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() {
@@ -17,12 +19,29 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   int _bottomNavIndex = 0;
+  List<Expense> expenses = [];
+
+  double get totalExpenses {
+    return expenses.fold(0.0, (sum, item) => sum + item.amount);
+  }
+
+  void _addExpense(Expense expense) {
+    setState(() {
+      expenses.add(expense);
+    });
+  }
+
+  void _updateExpenses(List<Expense> updatedExpenses) {
+    setState(() {
+      expenses = updatedExpenses;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
-        '/addExpense': (context) => AddExpensePage(), // Route for CreateExpensePage
+        '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense), // Pass the callback function
         // Other routes...
       },
       home: Scaffold(
@@ -116,7 +135,7 @@ class _MyAppState extends State<MyApp> {
                         Expanded(
                           child: HomePageCard(
                             title: 'Expense',
-                            amount: '3,245.15',
+                            amount: totalExpenses.toStringAsFixed(2),
                           ),
                         ),
                       ],
@@ -146,46 +165,46 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         floatingActionButton: Builder(
-          builder: (context) {
-            return SpeedDial(
-              icon: Icons.add,
-              activeIcon: Icons.close,
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white70,
-              overlayColor: Colors.black54,
-              overlayOpacity: 0.5,
-              children: [
-                SpeedDialChild(
-                  child: Icon(Icons.attach_money),
-                  backgroundColor: Colors.red,
-                  label: 'Income',
-                  onTap: () => print('Income'),
-                ),
-                SpeedDialChild(
-                  child: Icon(Icons.format_list_bulleted_sharp),
-                  backgroundColor: Colors.green,
-                  label: 'Expense',
-                  onTap: () {
-                    Navigator.pushNamed(context, '/addExpense');
-                  },
-                ),
-                SpeedDialChild(
-                  child: Icon(Icons.calculate_outlined),
-                  backgroundColor: Colors.blue,
-                  label: 'Budget',
-                  onTap: () {
+            builder: (context) {
+              return SpeedDial(
+                icon: Icons.add,
+                activeIcon: Icons.close,
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white70,
+                overlayColor: Colors.black54,
+                overlayOpacity: 0.5,
+                children: [
+                  SpeedDialChild(
+                    child: Icon(Icons.attach_money),
+                    backgroundColor: Colors.red,
+                    label: 'Income',
+                    onTap: () => print('Income'),
+                  ),
+                  SpeedDialChild(
+                    child: Icon(Icons.format_list_bulleted_sharp),
+                    backgroundColor: Colors.green,
+                    label: 'Expense',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/addExpense');
+                    },
+                  ),
+                  SpeedDialChild(
+                    child: Icon(Icons.calculate_outlined),
+                    backgroundColor: Colors.blue,
+                    label: 'Budget',
+                    onTap: () {
 
-                  },
-                ),
-                SpeedDialChild(
-                  child: Icon(Icons.auto_graph),
-                  backgroundColor: Colors.orange,
-                  label: 'Invest',
-                  onTap: () => print('Invest'),
-                ),
-              ],
-            );
-          }
+                    },
+                  ),
+                  SpeedDialChild(
+                    child: Icon(Icons.auto_graph),
+                    backgroundColor: Colors.orange,
+                    label: 'Invest',
+                    onTap: () => print('Invest'),
+                  ),
+                ],
+              );
+            }
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: CustomNavigationBar(
