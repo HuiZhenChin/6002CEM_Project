@@ -1,235 +1,204 @@
-import 'package:flutter/material.dart';
-import 'package:dollar_sense/colour.dart';
-import 'package:dollar_sense/addExpenseJson.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-class AddExpensePage extends StatefulWidget {
-  @override
-  _AddExpensePageState createState() => _AddExpensePageState();
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:dollar_sense/add_expense_custom_input_view.dart';
+import 'package:dollar_sense/add_expense_model.dart';
+import 'package:dollar_sense/add_expense_view_model.dart';
+import 'package:dollar_sense/currency_input_formatter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_picker_for_web/image_picker_for_web.dart';
+
+Future<void> main() async {
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: 'AIzaSyDi5bSQewZitC4aTXrsvag9BBoh8CjZe5U',
+      appId: '1:1092645709341:android:899bf97d577cd909ad08f4',
+      messagingSenderId: '1092645709341',
+      projectId: 'dollarsense-c1f43',
+    ),
+  );
 }
 
-class _AddExpensePageState extends State<AddExpensePage> {
-  List<Expense> expenses = [];
-  TextEditingController titleController = TextEditingController();
-  TextEditingController amountController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-  TextEditingController dateController = TextEditingController();
-  TextEditingController timeController = TextEditingController();
-  String selectedCategory = 'Food';
-  String selectedPaymentMethod = 'Cash';
-  File? receiptImage;
+class AddExpensePage extends StatelessWidget {
+  final Function(Expense) onExpenseAdded;
+
+  const AddExpensePage({required this.onExpenseAdded});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Budget Planner'),
+        backgroundColor: Color(0xFFFAE5CC),
+        title: Text('Add Expenses'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.attach_money),
+            onPressed: () {
+              // Implement action for money converter
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.history),
+            onPressed: () {
+              // Implement action for history
+            },
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(),
-                ),
-                items: ['Food', 'Transport', 'Entertainment', 'Other']
-                    .map((category) => DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
-                ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value!;
-                  });
-                },
-              ),
-              SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: selectedPaymentMethod,
-                decoration: InputDecoration(
-                  labelText: 'Payment Method',
-                  border: OutlineInputBorder(),
-                ),
-                items: ['Cash', 'Card', 'Online', 'Other']
-                    .map((method) => DropdownMenuItem<String>(
-                  value: method,
-                  child: Text(method),
-                ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedPaymentMethod = value!;
-                  });
-                },
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Amount',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: dateController,
-                decoration: InputDecoration(
-                  labelText: 'Date',
-                  border: OutlineInputBorder(),
-                ),
-                onTap: () async {
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
-                  );
-                  if (pickedDate != null) {
-                    setState(() {
-                      dateController.text = pickedDate.toLocal().toString().split(' ')[0];
-                    });
-                  }
-                },
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: timeController,
-                decoration: InputDecoration(
-                  labelText: 'Time',
-                  border: OutlineInputBorder(),
-                ),
-                onTap: () async {
-                  TimeOfDay? pickedTime = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
-                  );
-                  if (pickedTime != null) {
-                    setState(() {
-                      timeController.text = pickedTime.format(context);
-                    });
-                  }
-                },
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-                  setState(() {
-                    if (pickedFile != null) {
-                      receiptImage = File(pickedFile.path);
-                    }
-                  });
-                },
-                child: Text('Upload Receipt'),
-              ),
-              receiptImage != null
-                  ? Image.file(
-                receiptImage!,
-                height: 100,
-                width: 100,
-              )
-                  : Container(),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: Text('Cancel'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        addExpense();
-                      },
-                      child: Text('Add'),
-                    ),
-                  ),
-                ],
-              ),
+      body: AddExpenseForm(onExpenseAdded: onExpenseAdded),
+    );
+  }
+}
+
+class AddExpenseForm extends StatefulWidget {
+  final Function(Expense) onExpenseAdded;
+
+  const AddExpenseForm({required this.onExpenseAdded});
+
+  @override
+  _AddExpenseFormState createState() => _AddExpenseFormState();
+}
+
+class _AddExpenseFormState extends State<AddExpenseForm> {
+  final _formKey = GlobalKey<FormState>();
+  final viewModel = AddExpenseViewModel();
+
+  @override
+  void initState() {
+    super.initState();
+    viewModel.categoryController.text = viewModel.selectedCategory;
+    viewModel.paymentMethodController.text = viewModel.selectedPaymentMethod;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFAE5CC),
+              Color(0xFF9F8A85),
+              Color(0xFF655C56),
             ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Category input
+                CustomInputField(
+                  controller: viewModel.categoryController,
+                  labelText: 'Category',
+                  inputFormatters: [],
+                  onTap: () => viewModel.showCategoryDialog(context),
+                ),
+                SizedBox(height: 10),
+                // Payment method input
+                CustomInputField(
+                  controller: viewModel.paymentMethodController,
+                  labelText: 'Payment Method',
+                  inputFormatters: [],
+                  onTap: () => viewModel.showPaymentMethodDialog(context),
+                ),
+                SizedBox(height: 10),
+                // Title input
+                CustomInputField(
+                  controller: viewModel.titleController,
+                  labelText: 'Title', inputFormatters: [],
+                ),
+                SizedBox(height: 10),
+                // Amount input
+                CustomInputField(
+                  controller: viewModel.amountController,
+                  labelText: 'Amount',
+                  keyboardType: TextInputType.number, inputFormatters: [CurrencyInputFormatter()],
+                ),
+                SizedBox(height: 10),
+                // Date input
+                CustomInputField(
+                  controller: viewModel.dateController,
+                  labelText: 'Date',
+                  keyboardType: TextInputType.datetime, inputFormatters: [],
+                ),
+                SizedBox(height: 10),
+                // Time input
+                CustomInputField(
+                  controller: viewModel.timeController,
+                  labelText: 'Time',
+                  keyboardType: TextInputType.datetime, inputFormatters: [],
+                ),
+                SizedBox(height: 10),
+                // Description input
+                CustomInputField(
+                  controller: viewModel.descriptionController,
+                  labelText: 'Description', inputFormatters: [],
+                ),
+                SizedBox(height: 20),
+                // Upload Receipt button
+                ElevatedButton(
+                  onPressed: () async {
+                    final pickedFile = await ImagePickerPlugin().pickImage(source: ImageSource.gallery);
+                    setState(() {
+                      if (pickedFile != null) {
+                        viewModel.receiptImage = File(pickedFile.path);
+                      }
+                    });
+                  },
+                  child: Text('Upload Receipt'),
+                ),
+                SizedBox(height: 10),
+                viewModel.receiptImage != null
+                    ? kIsWeb
+                    ? Image.network(viewModel.receiptImage!.path) // Use Image.network for web
+                    : Image.file(
+                  viewModel.receiptImage!,
+                  height: 100,
+                  width: 100,
+                )
+                    : Container(),
+
+                SizedBox(height: 20),
+                // Cancel and Add buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('Cancel'),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            viewModel.addExpense(widget.onExpenseAdded);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Expense Added')),
+                            );
+                          }
+                        },
+                        child: Text('Add'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-
-  void addExpense() {
-    String title = titleController.text;
-    double amount = double.tryParse(amountController.text) ?? 0.0;
-    String description = descriptionController.text;
-    String date = dateController.text;
-    String time = timeController.text;
-
-    if (title.isNotEmpty && amount > 0) {
-      setState(() {
-        expenses.add(Expense(
-          title: title,
-          amount: amount,
-          category: selectedCategory,
-          paymentMethod: selectedPaymentMethod,
-          description: description,
-          date: date,
-          time: time,
-          receiptImage: receiptImage,
-        ));
-        titleController.clear();
-        amountController.clear();
-        descriptionController.clear();
-        dateController.clear();
-        timeController.clear();
-        receiptImage = null;
-      });
-    }
-  }
-}
-
-class Expense {
-  final String title;
-  final double amount;
-  final String category;
-  final String paymentMethod;
-  final String description;
-  final String date;
-  final String time;
-  final File? receiptImage;
-
-  Expense({
-    required this.title,
-    required this.amount,
-    required this.category,
-    required this.paymentMethod,
-    required this.description,
-    required this.date,
-    required this.time,
-    this.receiptImage,
-  });
 }
