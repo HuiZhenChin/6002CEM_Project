@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/income.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:dollar_sense/home_page_card.dart';
@@ -10,6 +11,8 @@ import 'add_expense_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dollar_sense/my_account.dart';
+import 'package:dollar_sense/income.dart';
+import 'package:dollar_sense/income_view_model.dart';
 
 class MyApp extends StatefulWidget {
 
@@ -24,6 +27,7 @@ class _MyAppState extends State<MyApp> {
   int _bottomNavIndex = 0;
   List<Expense> expenses = [];
   double _totalExpenses = 0.0;
+  double _income= 0.0;
 
   double get totalExpenses {
     return _totalExpenses;
@@ -40,7 +44,17 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       expenses.add(expense);
     });
-    _fetchTotalExpenses(); // Call _fetchTotalExpenses to update the total expenses
+    _fetchTotalExpenses();
+  }
+
+  double get income {
+    return _income;
+  }
+
+  set income(double value) {
+    setState(() {
+      _income = value;
+    });
   }
 
 
@@ -48,6 +62,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _fetchTotalExpenses();
+    _fetchIncome();
   }
 
   void _onTabTapped(int index) {
@@ -91,12 +106,37 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+
+  Future<void> _fetchIncome() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        double incomeValue = userDoc['income'] ?? 0.0;
+        setState(() {
+          income = incomeValue;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
         '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username), // Pass the callback function
-        // Other routes...
+        '/income': (context) => IncomePage(username: widget.username, onIncomeUpdated: _fetchIncome),
       },
       home: Scaffold(
         appBar: AppBar(
@@ -182,7 +222,7 @@ class _MyAppState extends State<MyApp> {
                         Expanded(
                           child: HomePageCard(
                             title: 'Income',
-                            amount: '40,000',
+                            amount: income.toStringAsFixed(2),
                           ),
                         ),
                         SizedBox(width: 16.0),
@@ -232,7 +272,9 @@ class _MyAppState extends State<MyApp> {
                     child: Icon(Icons.attach_money),
                     backgroundColor: Colors.red,
                     label: 'Income',
-                    onTap: () => print('Income'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/income');
+                    },
                   ),
                   SpeedDialChild(
                     child: Icon(Icons.format_list_bulleted_sharp),
