@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:dollar_sense/home_page_card.dart';
@@ -7,12 +8,14 @@ import 'package:dollar_sense/add_expense.dart';
 import 'add_expense_view_model.dart';
 import 'add_expense_model.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-void main() {
-  runApp(MyApp());
-}
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dollar_sense/my_account.dart';
 
 class MyApp extends StatefulWidget {
+
+  final String username, email;
+  MyApp({required this.username, required this.email});
+
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -20,28 +23,79 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   int _bottomNavIndex = 0;
   List<Expense> expenses = [];
+  double _totalExpenses = 0.0;
 
   double get totalExpenses {
-    return expenses.fold(0.0, (sum, item) => sum + item.amount);
+    return _totalExpenses;
   }
+
+  set totalExpenses(double value) {
+    setState(() {
+      _totalExpenses = value;
+    });
+  }
+
 
   void _addExpense(Expense expense) {
     setState(() {
       expenses.add(expense);
     });
+    _fetchTotalExpenses(); // Call _fetchTotalExpenses to update the total expenses
   }
 
-  void _updateExpenses(List<Expense> updatedExpenses) {
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTotalExpenses();
+  }
+
+  void _onTabTapped(int index) {
     setState(() {
-      expenses = updatedExpenses;
+      _bottomNavIndex = index;
     });
+
+    if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MyAccount(username: widget.username, email: widget.email),
+        ),
+      );
+    }
+  }
+
+  Future<void> _fetchTotalExpenses() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      QuerySnapshot expensesSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('expenses')
+          .get();
+
+      double total = 0.0;
+      expensesSnapshot.docs.forEach((doc) {
+        total += doc['amount'] as double;
+      });
+
+      setState(() {
+        totalExpenses = total;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
-        '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense), // Pass the callback function
+        '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username), // Pass the callback function
         // Other routes...
       },
       home: Scaffold(
@@ -94,7 +148,7 @@ class _MyAppState extends State<MyApp> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  'Hey, user',
+                  'Hey, ${widget.username}',
                   style: TextStyle(
                     fontSize: 24.0,
                     fontWeight: FontWeight.bold,
@@ -209,13 +263,9 @@ class _MyAppState extends State<MyApp> {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: CustomNavigationBar(
           currentIndex: _bottomNavIndex,
-          onTabTapped: (index) => setState(() {
-            _bottomNavIndex = index;
-          }),
+          onTabTapped: _onTabTapped,
         ).build(),
       ),
     );
   }
 }
-
-

@@ -1,12 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dollar_sense/edit_account.dart';
+import 'package:dollar_sense/login_main.dart';
 import 'package:dollar_sense/main.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
+import 'login_screen.dart';
+
 class MyAccount extends StatefulWidget {
+
+  final String username, email;
+
+  MyAccount({required this.username, required this.email});
+
   @override
   _MyAccountState createState() => _MyAccountState();
 }
@@ -58,6 +66,7 @@ class _MyAccountState extends State<MyAccount> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,7 +109,7 @@ class _MyAccountState extends State<MyAccount> {
               ),
               SizedBox(height: 16),
               Text(
-                'Username: $_username', // Display retrieved username
+                'Username: ${widget.username}', // Display retrieved username
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -109,7 +118,7 @@ class _MyAccountState extends State<MyAccount> {
               ),
               SizedBox(height: 8),
               Text(
-                'Email: $_email', // Display retrieved email
+                'Email: ${widget.email}', // Display retrieved email
                 style: TextStyle(
                   fontSize: 18,
                   color: Colors.black,
@@ -125,7 +134,7 @@ class _MyAccountState extends State<MyAccount> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => EditAccount()),
+                    MaterialPageRoute(builder: (context) => EditAccount(username: widget.username, email: widget.email)),
                   );
                 },
                 child: Text('Edit Account'),
@@ -140,11 +149,12 @@ class _MyAccountState extends State<MyAccount> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => MyApp()),
+                    MaterialPageRoute(builder: (context) => MyLogin()),
                   );
                 },
                 child: Text('Log Out'),
               ),
+
             ],
           ),
         ),

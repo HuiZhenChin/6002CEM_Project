@@ -1,4 +1,3 @@
-// add_expense_model.dart
 import 'dart:io';
 
 class Expense {
@@ -22,3 +21,4 @@ class Expense {
     this.receiptImage,
   });
 }
+

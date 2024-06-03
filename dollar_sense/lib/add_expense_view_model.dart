@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:dollar_sense/add_expense_custom_input_view.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dollar_sense/add_expense_model.dart';
-import 'package:dollar_sense/add_expense.dart';
 
 class AddExpenseViewModel {
   TextEditingController titleController = TextEditingController();
@@ -17,6 +17,8 @@ class AddExpenseViewModel {
   String selectedCategory = 'Food';
   String selectedPaymentMethod = 'Cash';
 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   void showCategoryDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -26,16 +28,17 @@ class AddExpenseViewModel {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: ['Food', 'Transport', 'Entertainment', 'Other']
-                .map((category) => RadioListTile<String>(
-              title: Text(category),
-              value: category,
-              groupValue: selectedCategory,
-              onChanged: (value) {
-                selectedCategory = value!;
-                categoryController.text = selectedCategory;
-                Navigator.of(context).pop();
-              },
-            ))
+                .map((category) =>
+                RadioListTile<String>(
+                  title: Text(category),
+                  value: category,
+                  groupValue: selectedCategory,
+                  onChanged: (value) {
+                    selectedCategory = value!;
+                    categoryController.text = selectedCategory;
+                    Navigator.of(context).pop();
+                  },
+                ))
                 .toList(),
           ),
         );
@@ -52,16 +55,17 @@ class AddExpenseViewModel {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: ['Cash', 'Card', 'Online', 'Other']
-                .map((method) => RadioListTile<String>(
-              title: Text(method),
-              value: method,
-              groupValue: selectedPaymentMethod,
-              onChanged: (value) {
-                selectedPaymentMethod = value!;
-                paymentMethodController.text = selectedPaymentMethod;
-                Navigator.of(context).pop();
-              },
-            ))
+                .map((method) =>
+                RadioListTile<String>(
+                  title: Text(method),
+                  value: method,
+                  groupValue: selectedPaymentMethod,
+                  onChanged: (value) {
+                    selectedPaymentMethod = value!;
+                    paymentMethodController.text = selectedPaymentMethod;
+                    Navigator.of(context).pop();
+                  },
+                ))
                 .toList(),
           ),
         );
@@ -69,7 +73,7 @@ class AddExpenseViewModel {
     );
   }
 
-  void addExpense(Function(Expense) onExpenseAdded) {
+  Future<void> addExpense(Function(Expense) onExpenseAdded, String username, BuildContext context) async {
     String title = titleController.text;
     double amount = double.tryParse(amountController.text) ?? 0.0;
     String description = descriptionController.text;
@@ -89,6 +93,7 @@ class AddExpenseViewModel {
       );
 
       onExpenseAdded(newExpense);
+      await _saveExpenseToFirestore(newExpense, username, context);
       titleController.clear();
       amountController.clear();
       descriptionController.clear();
@@ -96,5 +101,43 @@ class AddExpenseViewModel {
       timeController.clear();
       receiptImage = null;
     }
+  }
+
+  Future<void> _saveExpenseToFirestore(Expense expense, String username, BuildContext context) async {
+    // Query Firestore to get the user ID from the username
+    QuerySnapshot userSnapshot = await _firestore
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      CollectionReference expensesCollection = FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('expenses');
+
+      Map<String, dynamic> expenseData = {
+        'title': expense.title,
+        'amount': expense.amount,
+        'category': expense.category,
+        'payment_method': expense.paymentMethod,
+        'description': expense.description,
+        'date': expense.date,
+        'time': expense.time,
+        'receipt_image': expense.receiptImage?.path ?? '',
+      };
+
+      await expensesCollection.add(expenseData);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Expense successfully added')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: User not found')),
+      );
+    }
+
+
   }
 }

@@ -4,6 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class EditAccount extends StatefulWidget {
+
+  final String username, email;
+
+  EditAccount({required this.username, required this.email});
+
   @override
   _EditAccountState createState() => _EditAccountState();
 }
@@ -158,7 +163,7 @@ class _EditAccountState extends State<EditAccount> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Email: abc@gmail.com', // Replace with actual email
+                    'Email: ${widget.email}', // Replace with actual email
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.black,
@@ -167,7 +172,7 @@ class _EditAccountState extends State<EditAccount> {
                   ),
                   SizedBox(height: 16),
                   TextFormField(
-                    initialValue: 'abc', // Replace with the current username
+                    initialValue: '${widget.username}', // Replace with the current username
                     decoration: InputDecoration(
                       labelText: 'Username',
                     ),
@@ -216,6 +221,7 @@ class _EditAccountState extends State<EditAccount> {
                       _confirmPassword = value;
                     },
                   ),
+
                   SizedBox(height: 24),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -228,7 +234,7 @@ class _EditAccountState extends State<EditAccount> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => MyAccount(),
+                            builder: (context) => MyAccount(username: widget.username, email: widget.email),
                           ),
                         );
                       }
