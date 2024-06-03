@@ -1,3 +1,8 @@
+<<<<<<< Updated upstream
+=======
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/income.dart';
+>>>>>>> Stashed changes
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:dollar_sense/home_page_card.dart';
@@ -7,10 +12,17 @@ import 'package:dollar_sense/add_expense.dart';
 import 'add_expense_view_model.dart';
 import 'add_expense_model.dart';
 import 'package:firebase_core/firebase_core.dart';
+<<<<<<< Updated upstream
 
 void main() {
   runApp(MyApp());
 }
+=======
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dollar_sense/my_account.dart';
+import 'package:dollar_sense/income.dart';
+import 'package:dollar_sense/income_view_model.dart';
+>>>>>>> Stashed changes
 
 class MyApp extends StatefulWidget {
   @override
@@ -20,6 +32,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   int _bottomNavIndex = 0;
   List<Expense> expenses = [];
+<<<<<<< Updated upstream
+=======
+  double _totalExpenses = 0.0;
+  double _income= 0.0;
+>>>>>>> Stashed changes
 
   double get totalExpenses {
     return expenses.fold(0.0, (sum, item) => sum + item.amount);
@@ -29,20 +46,75 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       expenses.add(expense);
     });
+<<<<<<< Updated upstream
   }
 
   void _updateExpenses(List<Expense> updatedExpenses) {
+=======
+    _fetchTotalExpenses();
+  }
+
+  double get income {
+    return _income;
+  }
+
+  set income(double value) {
+    setState(() {
+      _income = value;
+    });
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTotalExpenses();
+    _fetchIncome();
+  }
+
+  void _onTabTapped(int index) {
+>>>>>>> Stashed changes
     setState(() {
       expenses = updatedExpenses;
     });
+  }
+
+
+  Future<void> _fetchIncome() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        double incomeValue = userDoc['income'] ?? 0.0;
+        setState(() {
+          income = incomeValue;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
+<<<<<<< Updated upstream
         '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense), // Pass the callback function
         // Other routes...
+=======
+        '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username), // Pass the callback function
+        '/income': (context) => IncomePage(username: widget.username, onIncomeUpdated: _fetchIncome),
+>>>>>>> Stashed changes
       },
       home: Scaffold(
         appBar: AppBar(
@@ -128,7 +200,7 @@ class _MyAppState extends State<MyApp> {
                         Expanded(
                           child: HomePageCard(
                             title: 'Income',
-                            amount: '40,000',
+                            amount: income.toStringAsFixed(2),
                           ),
                         ),
                         SizedBox(width: 16.0),
@@ -178,7 +250,9 @@ class _MyAppState extends State<MyApp> {
                     child: Icon(Icons.attach_money),
                     backgroundColor: Colors.red,
                     label: 'Income',
-                    onTap: () => print('Income'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/income');
+                    },
                   ),
                   SpeedDialChild(
                     child: Icon(Icons.format_list_bulleted_sharp),
