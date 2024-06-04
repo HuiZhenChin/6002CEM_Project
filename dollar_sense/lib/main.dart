@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/view_expenses.dart';
 import 'package:dollar_sense/income.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -277,7 +278,7 @@ class _MyAppState extends State<MyApp> {
                     },
                   ),
                   SpeedDialChild(
-                    child: Icon(Icons.format_list_bulleted_sharp),
+                    child: Icon(Icons.wallet),
                     backgroundColor: Colors.green,
                     label: 'Expense',
                     onTap: () {

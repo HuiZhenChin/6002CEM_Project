@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dollar_sense/add_expense_model.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+
 
 class AddExpenseViewModel {
   TextEditingController titleController = TextEditingController();
@@ -139,5 +140,27 @@ class AddExpenseViewModel {
     }
 
 
+  }
+
+  // Function to upload image to Firebase Storage
+  Future<String> uploadImageToFirebase(File imageFile) async {
+    try {
+      // Get reference to the storage service
+      firebase_storage.FirebaseStorage storage = firebase_storage.FirebaseStorage.instance;
+
+      // Create a reference to the location you want to upload the image
+      firebase_storage.Reference ref = storage.ref().child('receipts/${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      // Upload the file to Firebase Storage
+      await ref.putFile(imageFile);
+
+      // Get the download URL for the image
+      String imageUrl = await ref.getDownloadURL();
+
+      return imageUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return '';
+    }
   }
 }

@@ -7,7 +7,7 @@ class IncomeViewModel {
   final TextEditingController incomeController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> saveIncomeToFirestore(String username, BuildContext context) async {
+  Future<void> saveIncomeToFirestore(String username, double newIncome, BuildContext context) async {
     // Query Firestore to get the user ID from the username
     QuerySnapshot userSnapshot = await _firestore
         .collection('dollar_sense')
@@ -19,7 +19,7 @@ class IncomeViewModel {
 
       // Save the income directly under the user's document
       Map<String, dynamic> incomeData = {
-        'income': incomeController.text,
+        'income': newIncome,
       };
 
       await _firestore.collection('dollar_sense').doc(userId).update(incomeData);

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dollar_sense/view_expenses.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -49,15 +50,12 @@ class _AddExpensePageState extends State<AddExpensePage> {
         title: Text('Add Expenses'),
         actions: [
           IconButton(
-            icon: Icon(Icons.attach_money),
+            icon: Icon(Icons.format_list_bulleted_sharp),
             onPressed: () {
-              // Implement action for money converter
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.history),
-            onPressed: () {
-              // Implement action for history
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ViewExpensesPage(username: widget.username)), // Navigate to AddExpensesPage
+              );
             },
           ),
         ],
@@ -344,6 +342,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                   onPressed: () {
                                     if (_formKey.currentState?.validate() ?? false) {
                                       viewModel.addExpense(widget.onExpenseAdded, widget.username, context);
+                                      viewModel.uploadImageToFirebase(viewModel.receiptImage!);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Expense Added')),
                                       );

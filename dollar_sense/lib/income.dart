@@ -49,83 +49,114 @@ class _IncomePageState extends State<IncomePage> {
     }
   }
 
-  /*
   void _toggleEdit() {
     setState(() {
       _isEditing = !_isEditing;
       if (!_isEditing) {
-        double newIncome = double.tryParse(_viewModel.incomeController.text) ?? 0.0;
-        _viewModel.saveIncomeToFirestore(widget.username, newIncome);
-        widget.onIncomeUpdated(); // Notify that income has been updated
+        // Save logic moved to _saveIncome
+        _saveIncome();
       }
     });
   }
-  *
-   */
+
+  void _saveIncome() {
+    double newIncome = double.tryParse(_viewModel.incomeController.text) ?? 0.0;
+    _viewModel.saveIncomeToFirestore(widget.username, newIncome, context);
+    setState(() {
+      _fetchedIncome = newIncome;
+    });
+    widget.onIncomeUpdated(); // Notify that income has been updated
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _isEditing = false;
+      _viewModel.incomeController.text = _fetchedIncome.toString();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color(0xFFFAE5CC),
         title: Text('Income'),
+        actions: [
+          IconButton(
+            icon: Icon(_isEditing ? Icons.save : Icons.edit),
+            onPressed: _toggleEdit,
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Your Income',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: _viewModel.incomeController,
-              enabled: _isEditing,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Enter your income',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = false;
-                      _viewModel.incomeController.text = _viewModel.incomeController.text;
-                    });
-                  },
-                  child: Text('Cancel'),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFAE5CC),
+              Color(0xFF9F8A85),
+              Color(0xFF423D39),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Your Income',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ),
-              ],
-            ),
-            SizedBox(height: 20), // Add space between the rows
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Fetched Income:', // Label for the fetched income amount
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+              ),
+              SizedBox(height: 30),
+              SizedBox(
+                height: 50,
+                child: TextFormField(
+                  controller: _viewModel.incomeController,
+                  enabled: _isEditing,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Enter your income',
+                    floatingLabelStyle: TextStyle(color: Colors.black), // Floating label text color
+                    fillColor:  Color(0xFFEAD9CF), // Background color
+                    filled: true, // Enable the fill color
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.black), // Border color when enabled
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.black), // Border color when not focused
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.black), // Border color when focused
+                    ),
                   ),
                 ),
-                Text(
-                  '\$${_fetchedIncome.toStringAsFixed(2)}', // Display the fetched income amount
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
+              ),
+              SizedBox(height: 20),
+              if (_isEditing)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _cancelEdit,
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Color(0xFF52444E), // Text color
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        side: BorderSide(color: Color(0xFF2C2429)),
+                      ),
+                      child: Text('Cancel'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
