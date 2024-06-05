@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,6 +10,8 @@ import 'package:dollar_sense/add_expense_view_model.dart';
 import 'package:dollar_sense/currency_input_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dollar_sense/navigation_bar.dart';
+import 'package:dollar_sense/my_account.dart';
 
 class ViewExpensesPage extends StatefulWidget {
   final String username;
@@ -30,6 +31,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     super.initState();
     _loadDefaultImage();
   }
+
 
   Future<void> _loadDefaultImage() async {
     _defaultImageBase64 = await loadDefaultImageAsBase64();
@@ -58,7 +60,8 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
 
       return expensesSnapshot.docs.map((doc) {
         Expense expense = Expense.fromDocument(doc);
-        if ((expense.receiptImage == null || expense.receiptImage!.path.isEmpty) &&
+        if ((expense.receiptImage == null ||
+                expense.receiptImage!.path.isEmpty) &&
             (expense.imageBase64 == null || expense.imageBase64!.isEmpty)) {
           return Expense(
             title: expense.title,
@@ -166,73 +169,105 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color(0xFF988E82),
         title: Text('View Expenses'),
       ),
-      body: FutureBuilder<List<Expense>>(
-        future: _fetchExpenses(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          } else if (snapshot.data!.isEmpty) {
-            return Center(
-              child: Text('No expenses found.'),
-            );
-          } else {
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final expense = snapshot.data![index];
-                return ListTile(
-                  leading: _buildExpenseImage(expense),
-                  title: Text(expense.title),
-                  subtitle: Text('Amount: \$${expense.amount}'),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('Expense Details'),
-                          content: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(height: 8),
-                              Text('Title: ${expense.title}'),
-                              SizedBox(height: 8),
-                              Text('Amount: \$${expense.amount}'),
-                              SizedBox(height: 8),
-                              Text('Category: ${expense.category}'),
-                              SizedBox(height: 8),
-                              Text('Payment Method: ${expense.paymentMethod}'),
-                              SizedBox(height: 8),
-                              Text('Description: ${expense.description}'),
-                              SizedBox(height: 8),
-                              Center(child: _buildExpenseImage(expense)),
-                            ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF988E82),
+              Color(0xFFDED2C4),
+              Color(0xFFD5C2B0),
+            ],
+          ),
+        ),
+        child: FutureBuilder<List<Expense>>(
+          future: _fetchExpenses(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            } else if (snapshot.data!.isEmpty) {
+              return Center(
+                child: Text('No expenses found.'),
+              );
+            } else {
+              return ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  final expense = snapshot.data![index];
+                  final isOdd = index % 2 == 0; // Check if the index is odd
+
+                  return Container(
+                    color: isOdd
+                        ?  Colors.grey[200]!.withOpacity(0.8)
+                        : Colors.white!.withOpacity(0.8), // Set background color based on index
+                    child: ListTile(
+                      leading: _buildExpenseImage(expense),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(expense.title),
+                          Text(
+                            'Category: ${expense.category}',
+                            style: TextStyle(color: Colors.grey),
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop(); // Close the dialog
-                              },
-                              child: Text('Close'),
-                            ),
-                          ],
+                        ],
+                      ),
+                      subtitle: Text('Amount: \RM${expense.amount}'),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('Expense Details'),
+                              content: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(height: 8),
+                                  Text('Title: ${expense.title}'),
+                                  SizedBox(height: 8),
+                                  Text('Amount: \$${expense.amount}'),
+                                  SizedBox(height: 8),
+                                  Text('Category: ${expense.category}'),
+                                  SizedBox(height: 8),
+                                  Text(
+                                      'Payment Method: ${expense.paymentMethod}'),
+                                  SizedBox(height: 8),
+                                  Text('Description: ${expense.description}'),
+                                  SizedBox(height: 8),
+                                  Center(child: _buildExpenseImage(expense)),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context)
+                                        .pop(); // Close the dialog
+                                  },
+                                  child: Text('Close'),
+                                ),
+                              ],
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                );
-              },
-            );
-          }
-        },
+                    ),
+                  );
+                },
+              );
+            }
+          },
+        ),
       ),
     );
   }

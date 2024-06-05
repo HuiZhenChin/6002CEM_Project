@@ -9,6 +9,7 @@ import 'package:dollar_sense/add_expense_view_model.dart';
 import 'package:dollar_sense/currency_input_formatter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_for_web/image_picker_for_web.dart';
+import 'package:dollar_sense/navigation_bar.dart';
 
 Future<void> main() async {
   await Firebase.initializeApp(

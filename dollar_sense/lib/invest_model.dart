@@ -15,4 +15,13 @@ class Invest {
 
   });
 
+  factory Invest.fromDocument(DocumentSnapshot doc) {
+    return Invest(
+      title: doc['invest_title'],
+      amount: doc['invest_amount'],
+      date: doc['invest_date'],
+
+    );
+  }
+
 }

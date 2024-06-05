@@ -17,6 +17,7 @@ import 'package:dollar_sense/income_view_model.dart';
 import 'package:dollar_sense/invest.dart';
 import 'package:dollar_sense/invest_view_model.dart';
 import 'package:dollar_sense/invest_model.dart';
+import 'package:dollar_sense/speed_dial.dart';
 
 class MyApp extends StatefulWidget {
 
@@ -79,7 +80,6 @@ class _MyAppState extends State<MyApp> {
       _totalInvest = value;
     });
   }
-
 
   @override
   void initState() {
@@ -185,9 +185,10 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
-        '/addExpense': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username), // Pass the callback function
         '/income': (context) => IncomePage(username: widget.username, onIncomeUpdated: _fetchIncome),
-        '/invest': (context) => InvestPage(username: widget.username, onInvestAdded: _addInvest ),
+        '/invest': (context) => InvestPage(username: widget.username, onInvestAdded: _addInvest, email: widget.email ),
+        '/addExpenses': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username),
+        '/profile': (context) => MyAccount(username: widget.username, email: widget.email),
       },
       home: Scaffold(
         appBar: AppBar(
@@ -201,7 +202,7 @@ class _MyAppState extends State<MyApp> {
               colors: [
                 Color(0xFFFAE5CC),
                 Color(0xFF9F8A85),
-                Color(0xFF655C56),
+                Color(0xFF6E655E),
               ],
             ),
           ), // Set screen background color
@@ -309,52 +310,7 @@ class _MyAppState extends State<MyApp> {
             ],
           ),
         ),
-        floatingActionButton: Builder(
-            builder: (context) {
-              return SpeedDial(
-                icon: Icons.add,
-                activeIcon: Icons.close,
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white70,
-                overlayColor: Colors.black54,
-                overlayOpacity: 0.5,
-                children: [
-                  SpeedDialChild(
-                    child: Icon(Icons.attach_money),
-                    backgroundColor: Colors.red,
-                    label: 'Income',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/income');
-                    },
-                  ),
-                  SpeedDialChild(
-                    child: Icon(Icons.wallet),
-                    backgroundColor: Colors.green,
-                    label: 'Expense',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/addExpense');
-                    },
-                  ),
-                  SpeedDialChild(
-                    child: Icon(Icons.calculate_outlined),
-                    backgroundColor: Colors.blue,
-                    label: 'Budget',
-                    onTap: () {
-
-                    },
-                  ),
-                  SpeedDialChild(
-                    child: Icon(Icons.auto_graph),
-                    backgroundColor: Colors.orange,
-                    label: 'Invest',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/invest');
-                    },
-                  ),
-                ],
-              );
-            }
-        ),
+        floatingActionButton: CustomSpeedDial(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: CustomNavigationBar(
           currentIndex: _bottomNavIndex,

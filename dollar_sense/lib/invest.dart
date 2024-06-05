@@ -4,12 +4,13 @@ import 'package:dollar_sense/invest_view_model.dart';
 import 'package:dollar_sense/add_expense_custom_input_view.dart';
 import 'package:dollar_sense/currency_input_formatter.dart';
 import 'package:dollar_sense/invest_model.dart';
+import 'package:dollar_sense/view_invest.dart';
 
 class InvestPage extends StatefulWidget {
-  final String username;
+  final String username, email;
   final Function(Invest) onInvestAdded;
 
-  const InvestPage({required this.username, required this.onInvestAdded});
+  const InvestPage({required this.username, required this.onInvestAdded, required this.email});
 
   @override
   _InvestPageState createState() => _InvestPageState();
@@ -35,7 +36,12 @@ class _InvestPageState extends State<InvestPage> {
           IconButton(
             icon: Icon(Icons.format_list_bulleted_sharp),
             onPressed: () {
-
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                       ViewInvestPage(username: widget.username, email: widget.email)),
+              );
             },
           ),
         ],
