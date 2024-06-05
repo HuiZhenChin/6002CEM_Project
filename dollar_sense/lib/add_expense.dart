@@ -42,6 +42,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     viewModel.paymentMethodController.text = viewModel.selectedPaymentMethod;
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,13 +55,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ViewExpensesPage(username: widget.username)), // Navigate to AddExpensesPage
+                MaterialPageRoute(
+                    builder: (context) =>
+                        ViewExpensesPage(username: widget.username)),
               );
             },
           ),
         ],
       ),
-      body: Container( // Wrap with Container for gradient background
+      body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -128,13 +131,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
                             lastDate: DateTime(2101),
                           );
                           if (pickedDate != null) {
-                            final formattedDate = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
-                            viewModel.dateController.text = formattedDate; // Update controller value with formatted date
+                            final formattedDate =
+                                "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
+                            viewModel.dateController.text = formattedDate;
                           }
                         },
                       ),
                       SizedBox(height: 10),
-                    // Time input
+                      // Time input
                       CustomInputField(
                         controller: viewModel.timeController,
                         labelText: 'Time',
@@ -146,7 +150,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
                             initialTime: TimeOfDay.now(),
                           );
                           if (pickedTime != null) {
-                            viewModel.timeController.text = pickedTime.format(context); // Update controller value
+                            viewModel.timeController.text =
+                                pickedTime.format(context);
                           }
                         },
                       ),
@@ -158,146 +163,164 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         inputFormatters: [],
                       ),
                       SizedBox(height: 20),
-                  // Upload Receipt button
+                      // Upload Receipt button
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey[200], // Set background color for the button
-                          borderRadius: BorderRadius.circular(20), // Set border radius
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final pickedFile = await ImagePicker().pickImage(
-                              source: ImageSource.gallery,
-                            );
-                            setState(() {
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final pickedFile = await ImagePicker().pickImage(
+                                source: ImageSource.gallery,
+                              );
                               if (pickedFile != null) {
-                                viewModel.receiptImage = File(pickedFile.path);
+                                setState(() {
+                                  viewModel.receiptImage = File(pickedFile.path); // Update receiptImage
+                                });
+                                viewModel.convertImageToBase64(pickedFile); // Convert and set base64
                               }
-                            });
-                          },
-                          child: Text('Upload Receipt'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent, // Set button color to transparent
-                            elevation: 0, // Remove button elevation
-                            padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20), // Set button padding
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20), // Set border radius
-                              side: BorderSide(color: Colors.black), // Set border color
+                            },
+
+
+                            child: Text('Upload Receipt'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              elevation: 0,
+                              padding: EdgeInsets.symmetric(
+                                vertical: 15,
+                                horizontal: 20,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(color: Colors.black),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 10),
-                    // Display uploaded image
+                        SizedBox(height: 10),
+                      // Display uploaded image
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black), // Set border color
-                          borderRadius: BorderRadius.circular(10), // Set border radius
+                          border: Border.all(color: Colors.black),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: viewModel.receiptImage != null
                             ? kIsWeb
-                            ? Image.network(
-                          viewModel.receiptImage!.path,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                        ) // Use Image.network for web
-                            : Image.file(
-                          viewModel.receiptImage!,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                        )
-                            : SizedBox.shrink(), // Hide container if no image is selected
+                                ? Image.network(
+                                    viewModel.receiptImage!.path,
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.file(
+                                    viewModel.receiptImage!,
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                  )
+                            : SizedBox.shrink(),
                       ),
                       SizedBox(height: 10),
                       viewModel.receiptImage != null
                           ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Button to remove the picture
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                viewModel.receiptImage = null;
-                              });
-                            },
-                            icon: Icon(Icons.delete),
-                            color: Colors.black, // Set icon color to red
-                          ),
-                          // Button to view the picture
-                            IconButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: Text('Receipt Picture'),
-                                    content: Container(
-                                      width: 300, // Set width of the dialog content
-                                      height: 300, // Set height of the dialog content
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              double scaleFactor = 1.0; // Initial scale factor
-                                              return AlertDialog(
-                                                title: Text('Receipt Picture'),
-                                                content: Container(
-                                                  width: 300, // Set width of the dialog content
-                                                  height: 300, // Set height of the dialog content
-                                                  child: InteractiveViewer(
-                                                    boundaryMargin: EdgeInsets.all(20),
-                                                    minScale: 0.1,
-                                                    maxScale: 4,
-                                                    scaleEnabled: true,
-                                                    child: kIsWeb
-                                                        ? Image.network(viewModel.receiptImage!.path) // Use Image.network for web
-                                                        : Image.file(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Button to remove the picture
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      viewModel.receiptImage = null;
+                                    });
+                                  },
+                                  icon: Icon(Icons.delete),
+                                  color: Colors.black,
+                                ),
+                                // Button to view the picture
+                                IconButton(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: Text('Receipt Picture'),
+                                          content: Container(
+                                            width: 300,
+                                            height: 300,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder:
+                                                      (BuildContext context) {
+                                                    return AlertDialog(
+                                                      title: Text(
+                                                          'Receipt Picture'),
+                                                      content: Container(
+                                                        width: 300,
+                                                        height: 300,
+                                                        child:
+                                                            InteractiveViewer(
+                                                          boundaryMargin:
+                                                              EdgeInsets.all(
+                                                                  20),
+                                                          minScale: 0.1,
+                                                          maxScale: 4,
+                                                          scaleEnabled: true,
+                                                          child: kIsWeb
+                                                              ? Image.network(
+                                                                  viewModel
+                                                                      .receiptImage!
+                                                                      .path)
+                                                              : Image.file(
+                                                                  viewModel
+                                                                      .receiptImage!,
+                                                                  fit: BoxFit
+                                                                      .cover,
+                                                                ),
+                                                        ),
+                                                      ),
+                                                      actions: [
+                                                        ElevatedButton(
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                          },
+                                                          child: Text('Close'),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                              child: kIsWeb
+                                                  ? Image.network(viewModel
+                                                      .receiptImage!.path)
+                                                  : Image.file(
                                                       viewModel.receiptImage!,
                                                       fit: BoxFit.cover,
                                                     ),
-                                                  ),
-                                                ),
-                                                actions: [
-                                                  ElevatedButton(
-                                                    onPressed: () {
-                                                      Navigator.of(context).pop(); // Close the dialog
-                                                    },
-                                                    child: Text('Close'),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        },
-                                        child: kIsWeb
-                                            ? Image.network(viewModel.receiptImage!.path) // Use Image.network for web
-                                            : Image.file(
-                                          viewModel.receiptImage!,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    actions: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop(); // Close the dialog
-                                        },
-                                        child: Text('Close'),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                            icon: Icon(Icons.image_search),
-                            color: Colors.black, // Set icon color to blue
-                          )
-                        ],
-                      )
-                          : SizedBox.shrink(), // Hide row if no image is selected
+                                            ),
+                                          ),
+                                          actions: [
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: Text('Close'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  icon: Icon(Icons.image_search),
+                                  color: Colors.black,
+                                )
+                              ],
+                            )
+                          : SizedBox.shrink(),
                       SizedBox(height: 20),
                       // Cancel and Add buttons
                       Row(
@@ -308,15 +331,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF52444E), // Change to your preferred background color
+                                  color: Color(0xFF52444E),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
                                     Navigator.pop(context);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent, // Transparent background
-                                    elevation: 0, // No shadow
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
                                   ),
                                   child: Text(
                                     'CANCEL',
@@ -336,22 +359,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF332B28), // Change to your preferred background color
+                                  color: Color(0xFF332B28),
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState?.validate() ?? false) {
-                                      viewModel.addExpense(widget.onExpenseAdded, widget.username, context);
-                                      viewModel.uploadImageToFirebase(viewModel.receiptImage!);
+                                  onPressed: () async {
+                                      viewModel.addExpense(widget.onExpenseAdded, widget.username, context,);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Expense Added')),
                                       );
                                       Navigator.pop(context);
-                                    }
-                                  },
+                                    },
+
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent, // Transparent background
-                                    elevation: 0, // No shadow
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
                                   ),
                                   child: Text(
                                     'ADD',

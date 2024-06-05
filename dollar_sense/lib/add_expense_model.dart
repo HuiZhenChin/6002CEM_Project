@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class Expense {
   final String title;
@@ -11,6 +12,7 @@ class Expense {
   final String date;
   final String time;
   final File? receiptImage;
+  final String imageBase64;
 
   Expense({
     required this.title,
@@ -21,6 +23,8 @@ class Expense {
     required this.date,
     required this.time,
     this.receiptImage,
+    required this.imageBase64
+
   });
 
   factory Expense.fromDocument(DocumentSnapshot doc) {
@@ -32,8 +36,9 @@ class Expense {
       description: doc['description'],
       date: doc['date'],
       time: doc['time'],
-      receiptImage: doc['receipt_image'],
+      imageBase64: doc['receipt_image_base64'],
     );
   }
 }
+
 

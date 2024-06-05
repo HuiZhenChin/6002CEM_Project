@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_svg: ^2.0.9
+  flutter_svg: 2.0.10+1
 
   flutter_bloc: ^8.0.1
 
@@ -67,6 +67,7 @@ flutter:
     - assets/background.jpg
     - assets/logo.png
     - assets/avatar.jpg
+    - assets/expenses.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

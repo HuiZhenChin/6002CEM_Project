@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dollar_sense/add_expense_model.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
-
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddExpenseViewModel {
   TextEditingController titleController = TextEditingController();
@@ -14,6 +19,7 @@ class AddExpenseViewModel {
   TextEditingController categoryController = TextEditingController();
   TextEditingController paymentMethodController = TextEditingController();
   File? receiptImage;
+  String receiptImageBase64= "";
 
   String selectedCategory = 'Food';
   String selectedPaymentMethod = 'Cash';
@@ -74,14 +80,33 @@ class AddExpenseViewModel {
     );
   }
 
+  Future<String> loadDefaultImageAsBase64() async {
+    final ByteData bytes = await rootBundle.load('assets/expenses.png');
+    final Uint8List list = bytes.buffer.asUint8List();
+    return base64Encode(list);
+  }
+
+
   Future<void> addExpense(Function(Expense) onExpenseAdded, String username, BuildContext context) async {
     String title = titleController.text;
     double amount = double.tryParse(amountController.text) ?? 0.0;
     String description = descriptionController.text;
     String date = dateController.text;
     String time = timeController.text;
+    String imageBase64 = '';
 
+    // Validate that title is not empty and amount is greater than 0
     if (title.isNotEmpty && amount > 0) {
+      // Check if no image is uploaded, use default image
+      if (receiptImage == null && imageBase64.isEmpty) {
+        imageBase64 = await loadDefaultImageAsBase64();
+      } else {
+        // Convert and set base64 for the uploaded image
+        imageBase64 = await convertImageToBase64(XFile(receiptImage!.path));
+
+      }
+
+      // Create new expense object
       Expense newExpense = Expense(
         title: title,
         amount: amount,
@@ -91,17 +116,41 @@ class AddExpenseViewModel {
         date: date,
         time: time,
         receiptImage: receiptImage,
+        imageBase64: imageBase64, // Use the base64 of the image
       );
 
+      // Add the expense using the callback
       onExpenseAdded(newExpense);
+
+      // Save the expense to Firestore
       await _saveExpenseToFirestore(newExpense, username, context);
+
+      // Clear form fields
       titleController.clear();
       amountController.clear();
       descriptionController.clear();
       dateController.clear();
       timeController.clear();
       receiptImage = null;
+
+      // Show confirmation message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Expense Added')),
+      );
+
+      // Close the form
+      Navigator.pop(context);
+    } else {
+      // Show error message if validation fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid title and amount')),
+      );
     }
+  }
+
+  Future<String> convertImageToBase64(XFile imageFile) async {
+    final List<int> imageBytes = await imageFile.readAsBytes();
+    return base64Encode(imageBytes);
   }
 
   Future<void> _saveExpenseToFirestore(Expense expense, String username, BuildContext context) async {
@@ -127,7 +176,9 @@ class AddExpenseViewModel {
         'date': expense.date,
         'time': expense.time,
         'receipt_image': expense.receiptImage?.path ?? '',
+        'receipt_image_base64': expense.imageBase64,
       };
+
 
       await expensesCollection.add(expenseData);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,25 +193,4 @@ class AddExpenseViewModel {
 
   }
 
-  // Function to upload image to Firebase Storage
-  Future<String> uploadImageToFirebase(File imageFile) async {
-    try {
-      // Get reference to the storage service
-      firebase_storage.FirebaseStorage storage = firebase_storage.FirebaseStorage.instance;
-
-      // Create a reference to the location you want to upload the image
-      firebase_storage.Reference ref = storage.ref().child('receipts/${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-      // Upload the file to Firebase Storage
-      await ref.putFile(imageFile);
-
-      // Get the download URL for the image
-      String imageUrl = await ref.getDownloadURL();
-
-      return imageUrl;
-    } catch (e) {
-      print('Error uploading image: $e');
-      return '';
-    }
-  }
 }
