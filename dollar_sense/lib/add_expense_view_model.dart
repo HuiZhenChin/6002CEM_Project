@@ -106,8 +106,25 @@ class AddExpenseViewModel {
 
       }
 
+      DocumentReference counterDoc = FirebaseFirestore.instance
+          .collection('counters')
+          .doc('expenseCounter');
+
+      DocumentSnapshot counterSnapshot = await counterDoc.get();
+
+      int newExpenseId = 1;
+      if (counterSnapshot.exists) {
+        newExpenseId = counterSnapshot['currentId'] as int;
+        newExpenseId++; // Increment by 1
+      }
+
+      // Update the counter document with the new currentId
+      await counterDoc.set({'currentId': newExpenseId});
+
+
       // Create new expense object
       Expense newExpense = Expense(
+        id: newExpenseId.toString(),
         title: title,
         amount: amount,
         category: selectedCategory,
@@ -168,6 +185,7 @@ class AddExpenseViewModel {
           .collection('expenses');
 
       Map<String, dynamic> expenseData = {
+        'id': expense.id,
         'title': expense.title,
         'amount': expense.amount,
         'category': expense.category,

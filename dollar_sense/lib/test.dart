@@ -14,16 +14,16 @@ import 'package:dollar_sense/navigation_bar.dart';
 import 'package:dollar_sense/my_account.dart';
 import 'package:dollar_sense/edit_expense.dart';
 
-class ViewExpensesPage extends StatefulWidget {
+class TestPage extends StatefulWidget {
   final String username;
 
-  const ViewExpensesPage({required this.username});
+  const TestPage({required this.username});
 
   @override
-  _ViewExpensesPageState createState() => _ViewExpensesPageState();
+  _TestPageState createState() => _TestPageState();
 }
 
-class _ViewExpensesPageState extends State<ViewExpensesPage> {
+class _TestPageState extends State<TestPage> {
   String _defaultImageBase64 = "";
   List<Expense> expenses = [];
 
@@ -339,7 +339,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
                       color: isOdd
                           ? Colors.grey[200]!.withOpacity(0.8)
                           : Colors.white!.withOpacity(
-                              0.8), // Set background color based on index
+                          0.8), // Set background color based on index
                       child: ListTile(
                         leading: _buildExpenseImage(expense),
                         title: Row(

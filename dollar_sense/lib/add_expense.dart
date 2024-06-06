@@ -10,6 +10,7 @@ import 'package:dollar_sense/currency_input_formatter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_for_web/image_picker_for_web.dart';
 import 'package:dollar_sense/navigation_bar.dart';
+import 'package:dollar_sense/test.dart';
 
 Future<void> main() async {
   await Firebase.initializeApp(
@@ -58,7 +59,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 context,
                 MaterialPageRoute(
                     builder: (context) =>
-                        ViewExpensesPage(username: widget.username)),
+                        TestPage(username: widget.username)),
               );
             },
           ),

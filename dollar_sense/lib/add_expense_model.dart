@@ -4,17 +4,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class Expense {
-  final String title;
-  final double amount;
-  final String category;
-  final String paymentMethod;
-  final String description;
-  final String date;
-  final String time;
-  final File? receiptImage;
-  final String imageBase64;
+  final String id;
+  String title;
+  double amount;
+  String category;
+  String paymentMethod;
+  String description;
+  String date;
+  String time;
+  File? receiptImage;
+  String imageBase64;
 
   Expense({
+    required this.id,
     required this.title,
     required this.amount,
     required this.category,
@@ -29,6 +31,7 @@ class Expense {
 
   factory Expense.fromDocument(DocumentSnapshot doc) {
     return Expense(
+      id: doc['id'],
       title: doc['title'],
       amount: doc['amount'],
       category: doc['category'],
@@ -38,6 +41,22 @@ class Expense {
       time: doc['time'],
       imageBase64: doc['receipt_image_base64'],
     );
+  }
+
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'amount': amount,
+      'category': category,
+      'payment_method': paymentMethod,
+      'description': description,
+      'date': date,
+      'time': time,
+      'receipt_image': receiptImage?.path ?? '',
+      'receipt_image_base64': imageBase64 ?? '',
+    };
   }
 }
 

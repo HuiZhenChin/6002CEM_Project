@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/edit_expense.dart';
 import 'package:dollar_sense/view_expenses.dart';
 import 'package:dollar_sense/income.dart';
 import 'package:flutter/material.dart';
@@ -18,9 +19,9 @@ import 'package:dollar_sense/invest.dart';
 import 'package:dollar_sense/invest_view_model.dart';
 import 'package:dollar_sense/invest_model.dart';
 import 'package:dollar_sense/speed_dial.dart';
+import 'package:dollar_sense/view_expenses.dart';
 
 class MyApp extends StatefulWidget {
-
   final String username, email;
   MyApp({required this.username, required this.email});
 
@@ -33,7 +34,7 @@ class _MyAppState extends State<MyApp> {
   List<Expense> expenses = [];
   List<Invest> invests = [];
   double _totalExpenses = 0.0;
-  double _income= 0.0;
+  double _income = 0.0;
   double _totalInvest = 0.0;
 
   double get totalExpenses {
@@ -45,7 +46,6 @@ class _MyAppState extends State<MyApp> {
       _totalExpenses = value;
     });
   }
-
 
   void _addExpense(Expense expense) {
     setState(() {
@@ -98,7 +98,8 @@ class _MyAppState extends State<MyApp> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MyAccount(username: widget.username, email: widget.email),
+          builder: (context) =>
+              MyAccount(username: widget.username, email: widget.email),
         ),
       );
     }
@@ -129,7 +130,6 @@ class _MyAppState extends State<MyApp> {
       });
     }
   }
-
 
   Future<void> _fetchIncome() async {
     String username = widget.username;
@@ -179,6 +179,13 @@ class _MyAppState extends State<MyApp> {
         totalInvest = total;
       });
     }
+  }
+
+
+  Future<void> _refreshData() async {
+    await _fetchTotalExpenses();
+    await _fetchIncome();
+    await _fetchTotalInvest();
   }
 
   @override
@@ -231,6 +238,16 @@ class _MyAppState extends State<MyApp> {
                         iconSize: 30,
                         onPressed: () {
                           // Implement action for history
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: IconButton(
+                        icon: Icon(Icons.refresh),
+                        iconSize: 30,
+                        onPressed: () {
+                          _refreshData();
                         },
                       ),
                     ),
