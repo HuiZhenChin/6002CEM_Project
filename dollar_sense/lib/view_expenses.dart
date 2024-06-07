@@ -1,19 +1,10 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:dollar_sense/add_expense_custom_input_view.dart';
-import 'package:dollar_sense/add_expense_model.dart';
-import 'package:dollar_sense/add_expense_view_model.dart';
-import 'package:dollar_sense/currency_input_formatter.dart';
+import 'add_expense_model.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:dollar_sense/navigation_bar.dart';
-import 'package:dollar_sense/my_account.dart';
 import 'package:dollar_sense/edit_expense.dart';
-import 'package:dollar_sense/delete_expenses.dart';
 
 class ViewExpensesPage extends StatefulWidget {
   final String username;

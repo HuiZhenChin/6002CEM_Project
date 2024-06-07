@@ -1,15 +1,14 @@
 import 'dart:io';
-import 'package:dollar_sense/view_expenses.dart';
+import 'view_expenses.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:dollar_sense/add_expense_custom_input_view.dart';
-import 'package:dollar_sense/add_expense_model.dart';
-import 'package:dollar_sense/add_expense_view_model.dart';
-import 'package:dollar_sense/currency_input_formatter.dart';
+import 'add_expense_custom_input_view.dart';
+import 'add_expense_model.dart';
+import 'add_expense_view_model.dart';
+import 'currency_input_formatter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_picker_for_web/image_picker_for_web.dart';
-import 'package:dollar_sense/navigation_bar.dart';
+import 'transaction_history_view_model.dart';
 
 Future<void> main() async {
   await Firebase.initializeApp(
@@ -35,6 +34,7 @@ class AddExpensePage extends StatefulWidget {
 class _AddExpensePageState extends State<AddExpensePage> {
   final _formKey = GlobalKey<FormState>();
   final viewModel = AddExpenseViewModel();
+  final historyViewModel= TransactionHistoryViewModel();
 
   @override
   void initState() {
@@ -365,6 +365,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                 child: ElevatedButton(
                                   onPressed: () async {
                                       viewModel.addExpense(widget.onExpenseAdded, widget.username, context,);
+                                      String specificText = "Expenses:${viewModel.titleController} with ${viewModel.amountController}";
+                                      DateTime currentDate = DateTime.now();
+                                      historyViewModel.addHistory(specificText, currentDate, "username", context);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Expense Added')),
                                       );

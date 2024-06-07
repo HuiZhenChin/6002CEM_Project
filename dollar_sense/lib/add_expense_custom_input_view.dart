@@ -1,5 +1,4 @@
 // custom_input_field.dart
-import 'package:dollar_sense/currency_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

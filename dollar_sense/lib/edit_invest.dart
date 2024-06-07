@@ -2,12 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:dollar_sense/invest_model.dart';
-import 'package:dollar_sense/add_expense_view_model.dart';
-import 'package:dollar_sense/add_expense_custom_input_view.dart';
-import 'package:dollar_sense/currency_input_formatter.dart';
-import 'package:dollar_sense/navigation_bar.dart';
-import 'package:dollar_sense/speed_dial.dart';
+import 'invest_model.dart';
+import 'add_expense_view_model.dart';
+import 'add_expense_custom_input_view.dart';
+import 'currency_input_formatter.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class EditInvest extends StatefulWidget {
   final Function(Invest) onInvestUpdated;

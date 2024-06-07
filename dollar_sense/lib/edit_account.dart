@@ -1,4 +1,4 @@
-import 'package:dollar_sense/my_account.dart';
+import 'my_account.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dollar_sense/colour.dart';
+import 'colour.dart';
 
 const List createPiggyBankJson = [
   {

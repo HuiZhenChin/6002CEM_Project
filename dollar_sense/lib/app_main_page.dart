@@ -1,4 +1,3 @@
-import 'package:dollar_sense/main.dart';
 import 'package:flutter/material.dart';
 import 'login.dart';
 import 'register.dart';

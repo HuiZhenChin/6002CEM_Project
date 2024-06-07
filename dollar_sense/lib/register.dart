@@ -1,6 +1,4 @@
-import 'package:dollar_sense/login.dart';
-import 'package:dollar_sense/login_main.dart';
-import 'package:dollar_sense/main.dart';
+import 'login.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

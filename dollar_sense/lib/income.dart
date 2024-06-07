@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dollar_sense/income_view_model.dart';
+import 'income_view_model.dart';
 
 class IncomePage extends StatefulWidget {
   final String username;

@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dollar_sense/main.dart';
+import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:dollar_sense/my_account.dart';
-import 'package:dollar_sense/app_main_page.dart';
 
 class LoginPage extends StatelessWidget {
   @override

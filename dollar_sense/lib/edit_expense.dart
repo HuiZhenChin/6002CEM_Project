@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:dollar_sense/add_expense_model.dart';
+import 'add_expense_model.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:dollar_sense/add_expense_view_model.dart';
-import 'package:dollar_sense/add_expense_custom_input_view.dart';
-import 'package:dollar_sense/currency_input_formatter.dart';
+import 'add_expense_view_model.dart';
+import 'add_expense_custom_input_view.dart';
+import 'currency_input_formatter.dart';
 
 class EditExpense extends StatefulWidget {
   final Function(Expense) onExpenseUpdated;

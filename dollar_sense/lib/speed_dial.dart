@@ -38,7 +38,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
           backgroundColor: Colors.blue,
           label: 'Budget',
           onTap: () {
-            // Handle budget tap
+            Navigator.pushNamed(context, '/budget');
           },
         ),
         SpeedDialChild(

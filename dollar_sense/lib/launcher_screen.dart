@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dollar_sense/login_screen.dart';
+import 'login_screen.dart';
 
 class LauncherScreen extends StatelessWidget {
   const LauncherScreen({Key? key}) : super(key: key);

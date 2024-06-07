@@ -1,25 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dollar_sense/edit_expense.dart';
-import 'package:dollar_sense/view_expenses.dart';
-import 'package:dollar_sense/income.dart';
+import 'package:dollar_sense/budget.dart';
+import 'add_category.dart';
+import 'income.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:dollar_sense/home_page_card.dart';
-import 'package:dollar_sense/main_card.dart';
-import 'package:dollar_sense/navigation_bar.dart';
-import 'package:dollar_sense/add_expense.dart';
-import 'add_expense_view_model.dart';
+import 'home_page_card.dart';
+import 'main_card.dart';
+import 'navigation_bar.dart';
+import 'add_expense.dart';
 import 'add_expense_model.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:dollar_sense/my_account.dart';
-import 'package:dollar_sense/income.dart';
-import 'package:dollar_sense/income_view_model.dart';
-import 'package:dollar_sense/invest.dart';
-import 'package:dollar_sense/invest_view_model.dart';
-import 'package:dollar_sense/invest_model.dart';
-import 'package:dollar_sense/speed_dial.dart';
-import 'package:dollar_sense/view_expenses.dart';
+import 'my_account.dart';
+import 'invest.dart';
+import 'invest_model.dart';
+import 'speed_dial.dart';
+import 'budget.dart';
+import 'budget_model.dart';
 
 class MyApp extends StatefulWidget {
   final String username, email;
@@ -33,9 +27,11 @@ class _MyAppState extends State<MyApp> {
   int _bottomNavIndex = 0;
   List<Expense> expenses = [];
   List<Invest> invests = [];
+  List<Budget> budgets = [];
   double _totalExpenses = 0.0;
   double _income = 0.0;
   double _totalInvest = 0.0;
+  double _totalBudget= 0.0;
 
   double get totalExpenses {
     return _totalExpenses;
@@ -61,6 +57,13 @@ class _MyAppState extends State<MyApp> {
     _fetchTotalInvest();
   }
 
+  void _addBudget(Budget budget) {
+    setState(() {
+      budgets.add(budget);
+    });
+    _fetchTotalBudget();
+  }
+
   double get income {
     return _income;
   }
@@ -81,12 +84,23 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  double get totalBudget {
+    return _totalBudget;
+  }
+
+  set totalBudget(double value) {
+    setState(() {
+      _totalBudget = value;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _fetchTotalExpenses();
     _fetchIncome();
     _fetchTotalInvest();
+    _fetchTotalBudget();
   }
 
   void _onTabTapped(int index) {
@@ -95,6 +109,15 @@ class _MyAppState extends State<MyApp> {
     });
 
     if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              AddCategoryPage(username: widget.username),
+        ),
+      );
+    }
+    else if (index == 2) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -164,14 +187,14 @@ class _MyAppState extends State<MyApp> {
 
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
-      QuerySnapshot expensesSnapshot = await FirebaseFirestore.instance
+      QuerySnapshot investSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
           .collection('invest')
           .get();
 
       double total = 0.0;
-      expensesSnapshot.docs.forEach((doc) {
+      investSnapshot.docs.forEach((doc) {
         total += doc['invest_amount'] as double;
       });
 
@@ -181,11 +204,38 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  Future<void> _fetchTotalBudget() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budget')
+          .get();
+
+      double total = 0.0;
+      budgetSnapshot.docs.forEach((doc) {
+        total += doc['budget_amount'] as double;
+      });
+
+      setState(() {
+        totalBudget = total;
+      });
+    }
+  }
+
 
   Future<void> _refreshData() async {
     await _fetchTotalExpenses();
     await _fetchIncome();
     await _fetchTotalInvest();
+    await _fetchTotalBudget();
   }
 
   @override
@@ -196,6 +246,7 @@ class _MyAppState extends State<MyApp> {
         '/invest': (context) => InvestPage(username: widget.username, onInvestAdded: _addInvest, email: widget.email ),
         '/addExpenses': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username),
         '/profile': (context) => MyAccount(username: widget.username, email: widget.email),
+        '/budget': (context) => BudgetPage(username: widget.username, onBudgetAdded: _addBudget,),
       },
       home: Scaffold(
         appBar: AppBar(
@@ -309,7 +360,7 @@ class _MyAppState extends State<MyApp> {
                         Expanded(
                           child: HomePageCard(
                             title: 'Budget',
-                            amount: '8,500.00',
+                            amount: totalBudget.toStringAsFixed(2),
                           ),
                         ),
                         SizedBox(width: 16.0),

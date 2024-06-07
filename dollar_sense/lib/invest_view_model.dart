@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:dollar_sense/invest_model.dart';
+import 'invest_model.dart';
 
 class InvestViewModel {
   TextEditingController titleController = TextEditingController();
@@ -16,7 +14,6 @@ class InvestViewModel {
     String date = dateController.text;
 
     if (title.isNotEmpty && amount > 0) {
-
       DocumentReference counterDoc = FirebaseFirestore.instance
           .collection('counters')
           .doc('investCounter');
@@ -26,63 +23,61 @@ class InvestViewModel {
       int newInvestId = 1;
       if (counterSnapshot.exists) {
         newInvestId = counterSnapshot['currentId'] as int;
-        newInvestId++; // Increment by 1
+        newInvestId++;
+
+        // Update the counter document with the new currentId
+        await counterDoc.set({'currentId': newInvestId});
+
+
+        Invest newInvest = Invest(
+            id: newInvestId.toString(),
+            title: title,
+            amount: amount,
+            date: date
+        );
+
+        onInvestAdded(newInvest);
+        await _saveInvestToFirestore(newInvest, username, context);
+        titleController.clear();
+        amountController.clear();
+        dateController.clear();
       }
-
-      // Update the counter document with the new currentId
-      await counterDoc.set({'currentId': newInvestId});
-
-
-      Invest newInvest = Invest(
-        id: newInvestId.toString(),
-        title: title,
-        amount: amount,
-        date: date
-      );
-
-      onInvestAdded(newInvest);
-      await _saveInvestToFirestore(newInvest, username, context);
-      titleController.clear();
-      amountController.clear();
-      dateController.clear();
-
     }
   }
 
-  Future<void> _saveInvestToFirestore(Invest invest, String username, BuildContext context) async {
-    // Query Firestore to get the user ID from the username
-    QuerySnapshot userSnapshot = await _firestore
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      CollectionReference investCollection = FirebaseFirestore.instance
+    Future<void> _saveInvestToFirestore(Invest invest, String username,
+        BuildContext context) async {
+      // Query Firestore to get the user ID from the username
+      QuerySnapshot userSnapshot = await _firestore
           .collection('dollar_sense')
-          .doc(userId)
-          .collection('invest');
+          .where('username', isEqualTo: username)
+          .get();
 
-      Map<String, dynamic> investData = {
-        'id': invest.id,
-        'invest_title': invest.title,
-        'invest_amount': invest.amount,
-        'invest_date': invest.date
-      };
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        CollectionReference investCollection = FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('invest');
 
-      await investCollection.add(investData);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invest successfully added')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: User not found')),
-      );
+        Map<String, dynamic> investData = {
+          'id': invest.id,
+          'invest_title': invest.title,
+          'invest_amount': invest.amount,
+          'invest_date': invest.date
+        };
+
+        await investCollection.add(investData);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invest successfully added')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: User not found')),
+        );
+      }
     }
-
-
   }
 
 
 
-}

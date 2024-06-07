@@ -1,20 +1,11 @@
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:dollar_sense/add_expense_custom_input_view.dart';
-import 'package:dollar_sense/invest_model.dart';
-import 'package:dollar_sense/invest_view_model.dart';
-import 'package:dollar_sense/currency_input_formatter.dart';
+import 'invest_model.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:dollar_sense/navigation_bar.dart';
-import 'package:dollar_sense/speed_dial.dart';
-import 'package:dollar_sense/my_account.dart';
-import 'package:dollar_sense/edit_invest.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
+import 'my_account.dart';
+import 'edit_invest.dart';
 
 class ViewInvestPage extends StatefulWidget {
   final String username, email;
