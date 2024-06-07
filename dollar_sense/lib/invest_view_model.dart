@@ -16,7 +16,25 @@ class InvestViewModel {
     String date = dateController.text;
 
     if (title.isNotEmpty && amount > 0) {
+
+      DocumentReference counterDoc = FirebaseFirestore.instance
+          .collection('counters')
+          .doc('investCounter');
+
+      DocumentSnapshot counterSnapshot = await counterDoc.get();
+
+      int newInvestId = 1;
+      if (counterSnapshot.exists) {
+        newInvestId = counterSnapshot['currentId'] as int;
+        newInvestId++; // Increment by 1
+      }
+
+      // Update the counter document with the new currentId
+      await counterDoc.set({'currentId': newInvestId});
+
+
       Invest newInvest = Invest(
+        id: newInvestId.toString(),
         title: title,
         amount: amount,
         date: date
@@ -46,6 +64,7 @@ class InvestViewModel {
           .collection('invest');
 
       Map<String, dynamic> investData = {
+        'id': invest.id,
         'invest_title': invest.title,
         'invest_amount': invest.amount,
         'invest_date': invest.date

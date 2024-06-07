@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dollar_sense/navigation_bar.dart';
 import 'package:dollar_sense/speed_dial.dart';
 import 'package:dollar_sense/my_account.dart';
+import 'package:dollar_sense/edit_invest.dart';
 
 class ViewInvestPage extends StatefulWidget {
   final String username, email;
@@ -27,11 +28,11 @@ class ViewInvestPage extends StatefulWidget {
 class _ViewInvestPageState extends State<ViewInvestPage> {
   int currentIndex = 0;
   int _bottomNavIndex = 0;
+  List<Invest> invests = [];
 
   @override
   void initState() {
     super.initState();
-
   }
 
   void _onTabTapped(int index) {
@@ -43,12 +44,12 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MyAccount(username: widget.username, email: widget.email),
+          builder: (context) =>
+              MyAccount(username: widget.username, email: widget.email),
         ),
       );
     }
   }
-
 
   Future<List<Invest>> _fetchInvest() async {
     String username = widget.username;
@@ -63,6 +64,7 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
           .collection('dollar_sense')
           .doc(userId)
           .collection('invest')
+          .orderBy('id')
           .get();
 
       return investSnapshot.docs
@@ -73,6 +75,91 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
       return [];
     }
   }
+
+  void _updateInvest(Invest editedInvest) {
+    setState(() {
+      // Find the index of the edited expense in the expenses list
+      int index =
+          invests.indexWhere((invest) => invest.id == editedInvest.id);
+      if (index != -1) {
+        // Replace the edited expense with the new one
+        invests[index] = editedInvest;
+      }
+    });
+  }
+
+  void _editInvest(Invest invest) async {
+    // Retrieve the document ID associated with the selected expense
+    String documentId = await _getDocumentId(invest);
+
+    // Navigate to the edit expense screen and pass the document ID
+    Invest editedInvest = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditInvest(
+          onInvestUpdated: _updateInvest,
+          invest: invest,
+          username: widget.username,
+          documentId: documentId,
+        ),
+      ),
+    );
+
+    // Check if an expense was edited
+    if (editedInvest != null) {
+      // Update the UI with the edited expense
+      _updateInvest(editedInvest);
+    }
+  }
+
+  Future<String> _getDocumentId(Invest invest) async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      QuerySnapshot expenseSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('invest')
+          .limit(1)
+          .get();
+
+      if (expenseSnapshot.docs.isNotEmpty) {
+        return expenseSnapshot.docs.first.id;
+      }
+    }
+    // Return an empty string or handle the case where the document ID is not found
+    return '';
+  }
+
+  Future<void> _deleteInvest(Invest invest) async {
+    String username = widget.username;
+    String documentId = await _getDocumentId(invest);
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('invest')
+          .doc(documentId) // Specify the document ID of the investment to delete
+          .delete();
+
+      setState(() {
+        // Remove the deleted investment from the list
+        invests.removeWhere((element) => element.id == invest.id);
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -112,25 +199,42 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
               return ListView.builder(
                 itemCount: snapshot.data!.length,
                 itemBuilder: (context, index) {
-                  final expense = snapshot.data![index];
+                  final invest = snapshot.data![index];
                   final isOdd = index % 2 == 0; // Check if the index is odd
 
                   return Container(
                     color: isOdd
-                        ?  Colors.grey[200]!.withOpacity(0.8)
+                        ? Colors.grey[200]!.withOpacity(0.8)
                         : Colors.white!.withOpacity(0.8), // Set background color based on index
                     child: ListTile(
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(expense.title),
+                          Text(invest.title),
                           Text(
-                            '${expense.date}',
+                            '${invest.date}',
                             style: TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
-                      subtitle: Text('Amount: \RM${expense.amount}'),
+                      subtitle: Text('Amount: \RM${invest.amount}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.edit),
+                              onPressed: () {
+                                _editInvest(invest);
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () {
+                                _deleteInvest(invest); // Pass the document ID of the investment
+                              },
+                            ),
+                          ],
+                        ),
                     ),
                   );
                 },
