@@ -1,10 +1,16 @@
 import 'dart:typed_data';
+import 'package:dollar_sense/view_budget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'budget_view_model.dart';
 import 'currency_input_formatter.dart';
 import 'budget_model.dart';
 import 'add_expense_custom_input_view.dart';
+import 'transaction_history_view_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class BudgetPage extends StatefulWidget {
   final String username;
@@ -20,8 +26,10 @@ class _BudgetPageState extends State<BudgetPage> {
   final _formKey = GlobalKey<FormState>();
   List<String> _budgetCategories = [];
   bool _isLoading = true;
-  String selectedCategory= "";
+  String selectedCategory = "";
   final viewModel = BudgetViewModel();
+  final historyViewModel = TransactionHistoryViewModel();
+  int _bottomNavIndex = 0;
 
   @override
   void initState() {
@@ -38,15 +46,18 @@ class _BudgetPageState extends State<BudgetPage> {
 
       if (userSnapshot.docs.isNotEmpty) {
         String userId = userSnapshot.docs.first.id;
-        Map<String, dynamic>? userData = userSnapshot.docs.first.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? userData =
+        userSnapshot.docs.first.data() as Map<String, dynamic>?;
 
         setState(() {
-          _budgetCategories = (userData?['budget_category'] as List<dynamic>?)?.cast<String>() ?? [];
+          _budgetCategories = (userData?['budget_category'] as List<dynamic>?)
+              ?.cast<String>() ??
+              [];
           _isLoading = false;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: User not found')),
+          SnackBar(content: Text('No category created')),
         );
       }
     } catch (e) {
@@ -76,7 +87,8 @@ class _BudgetPageState extends State<BudgetPage> {
                   onChanged: (value) {
                     setState(() {
                       selectedCategory = value!;
-                      viewModel.categoryController.text = selectedCategory;
+                      viewModel.categoryController.text =
+                          selectedCategory;
                     });
                     Navigator.of(context).pop();
                   },
@@ -90,7 +102,97 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
+  String? _validateCategory(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please select a category';
+    }
+    return null;
+  }
 
+  String? _validateAmount(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Amount cannot be empty';
+    }
+    if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value)) {
+      return 'Please enter a valid number';
+    }
+    double amountValue = double.parse(value);
+    if (amountValue <= 0) {
+      return 'Amount must be greater than 0';
+    }
+    return null;
+  }
+
+  Future<void> _pickMonthAndYear(BuildContext context) async {
+      int? selectedYear;
+      String? selectedMonth;
+
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Select Month and Year'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                DropdownButton<String>(
+                  hint: Text('Select Month'),
+                  value: selectedMonth,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedMonth = newValue;
+                    });
+                  },
+                  items: DateFormat.MMMM().dateSymbols.MONTHS.map((String month) {
+                    return DropdownMenuItem<String>(
+                      value: month,
+                      child: Text(month),
+                    );
+                  }).toList(),
+                ),
+                DropdownButton<int>(
+                  hint: Text('Select Year'),
+                  value: selectedYear,
+                  onChanged: (int? newValue) {
+                    setState(() {
+                      selectedYear = newValue;
+                    });
+                  },
+                  items: List.generate(101, (index) => 2000 + index).map((int year) {
+                    return DropdownMenuItem<int>(
+                      value: year,
+                      child: Text(year.toString()),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text('CANCEL'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  setState(() {
+                    if (selectedMonth != null) {
+                      viewModel.monthController.text = selectedMonth!;
+                    }
+                    if (selectedYear != null) {
+                      viewModel.yearController.text = selectedYear.toString();
+                    }
+                  });
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -102,12 +204,18 @@ class _BudgetPageState extends State<BudgetPage> {
           IconButton(
             icon: Icon(Icons.format_list_bulleted_sharp),
             onPressed: () {
-
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ViewBudgetPage(username: widget.username),
+                ),
+              );
             },
           ),
         ],
       ),
-      body: Container( // Wrap with Container for gradient background
+      body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -129,25 +237,41 @@ class _BudgetPageState extends State<BudgetPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Category input
                       SizedBox(height: 10),
-                      // Title input
                       CustomInputField(
                         controller: viewModel.categoryController,
                         labelText: 'Category',
                         inputFormatters: [],
                         onTap: () => showCategoryDialog(),
+                        validator: _validateCategory,
                       ),
                       SizedBox(height: 10),
-                      // Amount input
                       CustomInputField(
                         controller: viewModel.amountController,
                         labelText: 'Amount',
                         keyboardType: TextInputType.number,
                         inputFormatters: [CurrencyInputFormatter()],
+                        validator: _validateAmount,
+                      ),
+                      SizedBox(height: 10),
+                      CustomInputField(
+                        controller: viewModel.monthController,
+                        labelText: 'Month',
+                        inputFormatters: [],
+                        onTap: () => _pickMonthAndYear(context),
+                        validator: (value) =>
+                        value == null || value.isEmpty ? 'Please select a month' : null,
+                      ),
+                      SizedBox(height: 10),
+                      CustomInputField(
+                        controller: viewModel.yearController,
+                        labelText: 'Year',
+                        inputFormatters: [],
+                        onTap: () => _pickMonthAndYear(context),
+                        validator: (value) =>
+                        value == null || value.isEmpty ? 'Please select a year' : null,
                       ),
                       SizedBox(height: 20),
-                      // Cancel and Add buttons
                       Row(
                         children: [
                           Expanded(
@@ -156,15 +280,15 @@ class _BudgetPageState extends State<BudgetPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF52444E), // Change to your preferred background color
+                                  color: Color(0xFF52444E),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
                                     Navigator.pop(context);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent, // Transparent background
-                                    elevation: 0, // No shadow
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
                                   ),
                                   child: Text(
                                     'CANCEL',
@@ -184,34 +308,36 @@ class _BudgetPageState extends State<BudgetPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF332B28), // Change to your preferred background color
+                                  color: Color(0xFF332B28),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     if (_formKey.currentState?.validate() ?? false) {
-                                      bool categoryExists = await viewModel.checkCategoryExists(widget.username, viewModel.categoryController.text.trim());
+                                      bool categoryExists = await viewModel
+                                          .checkCategoryExists(
+                                          widget.username,
+                                          viewModel.categoryController.text.trim());
                                       if (categoryExists) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(content: Text('Category already exists')),
                                         );
                                         return;
                                       } else {
-                                        await viewModel.addBudget(widget.onBudgetAdded, widget.username, context);
+                                        await viewModel.addBudget(
+                                            widget.onBudgetAdded,
+                                            widget.username, context);
+                                        String specificText = "Add Budget: ${viewModel.categoryController.text} with ${viewModel.amountController.text}";
+                                        await historyViewModel.addHistory(
+                                            specificText, widget.username, context);
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(content: Text('New Budget Added!')),
                                         );
                                       }
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Failed to add budget')),
-                                      );
                                     }
-                                    Navigator.pop(context);
                                   },
-
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent, // Transparent background
-                                    elevation: 0, // No shadow
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
                                   ),
                                   child: Text(
                                     'ADD',
@@ -234,6 +360,12 @@ class _BudgetPageState extends State<BudgetPage> {
           ],
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 }

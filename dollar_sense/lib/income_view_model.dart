@@ -22,9 +22,7 @@ class IncomeViewModel {
 
       await _firestore.collection('dollar_sense').doc(userId).update(incomeData);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Income successfully modified')),
-      );
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: User not found')),

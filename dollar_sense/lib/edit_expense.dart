@@ -9,6 +9,10 @@ import 'package:image_picker/image_picker.dart';
 import 'add_expense_view_model.dart';
 import 'add_expense_custom_input_view.dart';
 import 'currency_input_formatter.dart';
+import 'transaction_history_view_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class EditExpense extends StatefulWidget {
   final Function(Expense) onExpenseUpdated;
@@ -27,6 +31,11 @@ class _EditExpenseState extends State<EditExpense> {
   bool _isEditing = false;
   bool _isSaving = false;
   final viewModel = AddExpenseViewModel();
+  final historyViewModel= TransactionHistoryViewModel();
+  List<String> _budgetCategories = [];
+  bool _isLoading = true;
+  int _bottomNavIndex = 0;
+
   String originalCategory = '';
   String originalPaymentMethod = '';
   File? newReceiptImage;
@@ -108,6 +117,8 @@ class _EditExpenseState extends State<EditExpense> {
               .update(updatedExpense.toMap());
         }
 
+        String specificText = "Edit Expenses: ${titleController.text}";
+        await historyViewModel.addHistory(specificText, widget.username, context);
         // Show a snackbar to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -159,7 +170,38 @@ class _EditExpenseState extends State<EditExpense> {
     });
   }
 
+  Future<void> _fetchBudgetCategories() async {
+    try {
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .where('username', isEqualTo: widget.username)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        Map<String, dynamic>? userData =
+        userSnapshot.docs.first.data() as Map<String, dynamic>?;
+
+        setState(() {
+          _budgetCategories = (userData?['expense_category'] as List<dynamic>?)
+              ?.cast<String>() ??
+              [];
+          _isLoading = false;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No category created')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching categories: $e')),
+      );
+    }
+  }
+
   void showCategoryDialog(BuildContext context) {
+    _fetchBudgetCategories();
     // Use a separate variable to track the selected category
     String selectedCategory = originalCategory;
 
@@ -172,7 +214,7 @@ class _EditExpenseState extends State<EditExpense> {
               title: Text('Select Category'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: ['Food', 'Transport', 'Entertainment', 'Other']
+                children: _budgetCategories
                     .map((category) => RadioListTile<String>(
                   title: Text(category),
                   value: category,
@@ -616,6 +658,12 @@ class _EditExpenseState extends State<EditExpense> {
           ),
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 

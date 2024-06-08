@@ -1,10 +1,15 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/add_expense_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'add_expense_model.dart';
 import 'package:flutter/services.dart';
 import 'package:dollar_sense/edit_expense.dart';
+import 'transaction_history_view_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class ViewExpensesPage extends StatefulWidget {
   final String username;
@@ -18,6 +23,9 @@ class ViewExpensesPage extends StatefulWidget {
 class _ViewExpensesPageState extends State<ViewExpensesPage> {
   String _defaultImageBase64 = "";
   List<Expense> expenses = [];
+  final viewModel= AddExpenseViewModel();
+  final historyViewModel= TransactionHistoryViewModel();
+  int _bottomNavIndex = 0;
 
   @override
   void initState() {
@@ -25,6 +33,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     _loadDefaultImage();
     _fetchExpenses();
   }
+
 
   Future<void> _loadDefaultImage() async {
     _defaultImageBase64 = await loadDefaultImageAsBase64();
@@ -66,6 +75,8 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
         expenses.removeWhere((element) => element.id == expense.id);
       });
 
+      String specificText = "Delete Expenses: ${expense.title} ";
+      await historyViewModel.addHistory(specificText, widget.username, context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Expense deleted successfully'),
@@ -415,6 +426,12 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
           },
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 }

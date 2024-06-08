@@ -5,14 +5,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
-import 'login_screen.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class MyAccount extends StatefulWidget {
 
-  final String username, email;
+  final String username;
 
-  MyAccount({required this.username, required this.email});
+  MyAccount({required this.username});
 
   @override
   _MyAccountState createState() => _MyAccountState();
@@ -22,6 +23,7 @@ class _MyAccountState extends State<MyAccount> {
   File? _image;
   String _username = '';
   String _email = '';
+  int _bottomNavIndex = 3;
 
   @override
   void initState() {
@@ -117,7 +119,7 @@ class _MyAccountState extends State<MyAccount> {
               ),
               SizedBox(height: 8),
               Text(
-                'Email: ${widget.email}', // Display retrieved email
+                'Email: ', // Display retrieved email
                 style: TextStyle(
                   fontSize: 18,
                   color: Colors.black,
@@ -133,7 +135,7 @@ class _MyAccountState extends State<MyAccount> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => EditAccount(username: widget.username, email: widget.email)),
+                    MaterialPageRoute(builder: (context) => EditAccount(username: widget.username)),
                   );
                 },
                 child: Text('Edit Account'),
@@ -158,6 +160,12 @@ class _MyAccountState extends State<MyAccount> {
           ),
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 }

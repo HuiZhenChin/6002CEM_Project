@@ -1,6 +1,9 @@
 import 'package:dollar_sense/add_category.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class CategoriesPage extends StatefulWidget {
   final String username;
@@ -15,6 +18,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   List<String> _expenseCategories = [];
   List<String> _budgetCategories = [];
   bool _isLoading = true;
+  int _bottomNavIndex = 0;
 
   @override
   void initState() {
@@ -224,6 +228,12 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ],
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 

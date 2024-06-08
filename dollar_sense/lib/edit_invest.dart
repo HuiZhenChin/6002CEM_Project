@@ -6,6 +6,7 @@ import 'invest_model.dart';
 import 'add_expense_view_model.dart';
 import 'add_expense_custom_input_view.dart';
 import 'currency_input_formatter.dart';
+import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
@@ -28,24 +29,16 @@ class _EditInvestState extends State<EditInvest> {
   bool _isEditing = false;
   bool _isSaving = false;
   final viewModel = AddExpenseViewModel();
-  String originalCategory = '';
-  String originalPaymentMethod = '';
-  File? newReceiptImage;
 
   late TextEditingController titleController;
   late TextEditingController amountController;
-  late TextEditingController categoryController;
-  late TextEditingController paymentMethodController;
-  late TextEditingController descriptionController;
   late TextEditingController dateController;
-  late TextEditingController timeController;
 
   @override
   void initState() {
     super.initState();
     titleController = TextEditingController(text: widget.invest.title);
-    amountController =
-        TextEditingController(text: widget.invest.amount.toString());
+    amountController = TextEditingController(text: widget.invest.amount.toString());
     dateController = TextEditingController(text: widget.invest.date);
 
   }
@@ -112,7 +105,7 @@ class _EditInvestState extends State<EditInvest> {
         });
       } catch (error) {
         // Handle any errors that occur during the update process
-        print('Error updating expense: $error');
+        print('Error updating invest: $error');
 
         // Show a snackbar to indicate failure
         ScaffoldMessenger.of(context).showSnackBar(
@@ -241,7 +234,7 @@ class _EditInvestState extends State<EditInvest> {
                           color: Color(0xFF332B28),
                         ),
                         child: ElevatedButton(
-                          onPressed: () async {
+                          onPressed: () {
                             _saveInvest();
                           },
                           style: ElevatedButton.styleFrom(
@@ -269,7 +262,7 @@ class _EditInvestState extends State<EditInvest> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped: _onTabTapped,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }

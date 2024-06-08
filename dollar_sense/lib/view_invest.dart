@@ -2,15 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'invest_model.dart';
 import 'package:flutter/services.dart';
+import 'edit_invest.dart';
+import 'transaction_history_view_model.dart';
+import 'invest_view_model.dart';
+import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
-import 'my_account.dart';
-import 'edit_invest.dart';
 
 class ViewInvestPage extends StatefulWidget {
-  final String username, email;
+  final String username;
 
-  const ViewInvestPage({required this.username, required this.email});
+  const ViewInvestPage({required this.username});
 
   @override
   _ViewInvestPageState createState() => _ViewInvestPageState();
@@ -20,26 +22,13 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
   int currentIndex = 0;
   int _bottomNavIndex = 0;
   List<Invest> invests = [];
+  final viewModel= InvestViewModel();
+  final historyViewModel= TransactionHistoryViewModel();
 
   @override
   void initState() {
     super.initState();
-  }
-
-  void _onTabTapped(int index) {
-    setState(() {
-      _bottomNavIndex = index;
-    });
-
-    if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              MyAccount(username: widget.username, email: widget.email),
-        ),
-      );
-    }
+    _fetchInvest();
   }
 
   Future<List<Invest>> _fetchInvest() async {
@@ -116,6 +105,7 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
           .collection('dollar_sense')
           .doc(userId)
           .collection('invest')
+          .where('id', isEqualTo: invest.id)
           .limit(1)
           .get();
 
@@ -148,13 +138,17 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
         // Remove the deleted investment from the list
         invests.removeWhere((element) => element.id == invest.id);
       });
+
+      // Add the history entry with the title of the deleted investment
+      String specificText = "Delete Invest: ${invest.title}";
+      await historyViewModel.addHistory(specificText, widget.username, context);
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+      return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFF988E82),
         title: Text('View Invest'),
@@ -220,8 +214,9 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
                             ),
                             IconButton(
                               icon: Icon(Icons.delete),
-                              onPressed: () {
+                              onPressed: () async {
                                 _deleteInvest(invest); // Pass the document ID of the investment
+
                               },
                             ),
                           ],
@@ -234,12 +229,12 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
           },
         ),
       ),
-      floatingActionButton: CustomSpeedDial(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: CustomNavigationBar(
-        currentIndex: _bottomNavIndex,
-        onTabTapped: _onTabTapped,
-      ).build(),
+        floatingActionButton: CustomSpeedDial(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: CustomNavigationBar(
+          currentIndex: _bottomNavIndex,
+          onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+        ).build(),
     );
   }
 }

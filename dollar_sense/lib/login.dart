@@ -127,7 +127,7 @@ class _LoginFormState extends State<LoginForm> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MyApp(username: username, email: email),
+            builder: (context) => MyApp(username: username),
           ),
         );
       } catch (e) {

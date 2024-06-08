@@ -49,6 +49,14 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
             Navigator.pushNamed(context, '/invest');
           },
         ),
+        SpeedDialChild(
+          child: Icon(Icons.category_rounded),
+          backgroundColor: Colors.deepPurple,
+          label: 'Category',
+          onTap: () {
+            Navigator.pushNamed(context, '/category');
+          },
+        ),
       ],
     );
   }

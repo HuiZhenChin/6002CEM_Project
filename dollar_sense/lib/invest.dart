@@ -4,12 +4,16 @@ import 'add_expense_custom_input_view.dart';
 import 'currency_input_formatter.dart';
 import 'invest_model.dart';
 import 'view_invest.dart';
+import 'transaction_history_view_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class InvestPage extends StatefulWidget {
-  final String username, email;
+  final String username;
   final Function(Invest) onInvestAdded;
 
-  const InvestPage({required this.username, required this.onInvestAdded, required this.email});
+  const InvestPage({required this.username, required this.onInvestAdded});
 
   @override
   _InvestPageState createState() => _InvestPageState();
@@ -18,11 +22,23 @@ class InvestPage extends StatefulWidget {
 class _InvestPageState extends State<InvestPage> {
   final _formKey = GlobalKey<FormState>();
   final viewModel = InvestViewModel();
+  final historyViewModel= TransactionHistoryViewModel();
+  int _bottomNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
 
+  }
+
+  String? _validateField(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName cannot be empty';
+    }
+    if (fieldName == 'Amount' && !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value)) {
+      return 'Please enter a valid number';
+    }
+    return null;
   }
 
   @override
@@ -38,14 +54,16 @@ class _InvestPageState extends State<InvestPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                       ViewInvestPage(username: widget.username, email: widget.email)),
+                  builder: (context) => ViewInvestPage(
+                    username: widget.username,
+                  ),
+                ),
               );
             },
           ),
         ],
       ),
-      body: Container( // Wrap with Container for gradient background
+      body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -67,24 +85,22 @@ class _InvestPageState extends State<InvestPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Category input
                       SizedBox(height: 10),
-                      // Title input
                       CustomInputField(
                         controller: viewModel.titleController,
                         labelText: 'Title',
                         inputFormatters: [],
+                        validator: (value) => _validateField(value, 'Title'),
                       ),
                       SizedBox(height: 10),
-                      // Amount input
                       CustomInputField(
                         controller: viewModel.amountController,
                         labelText: 'Amount',
                         keyboardType: TextInputType.number,
                         inputFormatters: [CurrencyInputFormatter()],
+                        validator: (value) => _validateField(value, 'Amount'),
                       ),
                       SizedBox(height: 10),
-                      // Date input
                       CustomInputField(
                         controller: viewModel.dateController,
                         labelText: 'Date',
@@ -99,12 +115,12 @@ class _InvestPageState extends State<InvestPage> {
                           );
                           if (pickedDate != null) {
                             final formattedDate = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
-                            viewModel.dateController.text = formattedDate; // Update controller value with formatted date
+                            viewModel.dateController.text = formattedDate;
                           }
                         },
+                        validator: (value) => _validateField(value, 'Date'),
                       ),
                       SizedBox(height: 20),
-                      // Cancel and Add buttons
                       Row(
                         children: [
                           Expanded(
@@ -113,15 +129,15 @@ class _InvestPageState extends State<InvestPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF52444E), // Change to your preferred background color
+                                  color: Color(0xFF52444E),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
                                     Navigator.pop(context);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent, // Transparent background
-                                    elevation: 0, // No shadow
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
                                   ),
                                   child: Text(
                                     'CANCEL',
@@ -141,12 +157,14 @@ class _InvestPageState extends State<InvestPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF332B28), // Change to your preferred background color
+                                  color: Color(0xFF332B28),
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: () {
+                                  onPressed: () async {
                                     if (_formKey.currentState?.validate() ?? false) {
                                       viewModel.addInvest(widget.onInvestAdded, widget.username, context);
+                                      String specificText = "Add Invest: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
+                                      await historyViewModel.addHistory(specificText, widget.username, context);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('New Invest Added')),
                                       );
@@ -154,8 +172,8 @@ class _InvestPageState extends State<InvestPage> {
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent, // Transparent background
-                                    elevation: 0, // No shadow
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
                                   ),
                                   child: Text(
                                     'ADD',
@@ -178,6 +196,12 @@ class _InvestPageState extends State<InvestPage> {
           ],
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 }

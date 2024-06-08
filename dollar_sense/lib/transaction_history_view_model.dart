@@ -7,12 +7,11 @@ class TransactionHistoryViewModel {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> addHistory(String text, String username, BuildContext context) async {
-    DateTime now = DateTime.now();
-    String formattedDate = DateFormat('yyyy-MM-dd').format(now); // Format the date
+    DateTime date = DateTime.now();
 
     History newHistory = History(
       text: text,
-      date: formattedDate,
+      date: date.toString(),
     );
 
     await _saveHistoryToFirestore(newHistory, username, context);

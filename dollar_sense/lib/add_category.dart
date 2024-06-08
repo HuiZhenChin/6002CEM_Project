@@ -1,6 +1,9 @@
 import 'package:dollar_sense/category.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class AddCategoryPage extends StatefulWidget {
   final String username;
@@ -15,6 +18,8 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   String _selectedType = 'expenses';
   final TextEditingController _categoryController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final navigationBarViewModel= NavigationBarViewModel();
+  int _bottomNavIndex = 0;
 
   Future<void> saveCategoryToFirestore(String username, String newCategory,
       BuildContext context) async {
@@ -130,6 +135,13 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
           ],
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
+
   }
 }

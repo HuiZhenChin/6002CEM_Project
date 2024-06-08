@@ -28,9 +28,11 @@ class CustomNavigationBar {
             break;
           case 2:
             iconData = Icons.insert_chart_rounded;
+
             break;
           case 3:
             iconData = Icons.person;
+
             break;
           default:
             iconData = Icons.error;

@@ -18,38 +18,10 @@ class AddExpenseViewModel {
   TextEditingController paymentMethodController = TextEditingController();
   File? receiptImage;
   String receiptImageBase64= "";
-
-  String selectedCategory = 'Food';
   String selectedPaymentMethod = 'Cash';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void showCategoryDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Select Category'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ['Food', 'Transport', 'Entertainment', 'Other']
-                .map((category) =>
-                RadioListTile<String>(
-                  title: Text(category),
-                  value: category,
-                  groupValue: selectedCategory,
-                  onChanged: (value) {
-                    selectedCategory = value!;
-                    categoryController.text = selectedCategory;
-                    Navigator.of(context).pop();
-                  },
-                ))
-                .toList(),
-          ),
-        );
-      },
-    );
-  }
 
   void showPaymentMethodDialog(BuildContext context) {
     showDialog(
@@ -88,6 +60,7 @@ class AddExpenseViewModel {
   Future<void> addExpense(Function(Expense) onExpenseAdded, String username, BuildContext context) async {
     String title = titleController.text;
     double amount = double.tryParse(amountController.text) ?? 0.0;
+    String category= categoryController.text;
     String description = descriptionController.text;
     String date = dateController.text;
     String time = timeController.text;
@@ -125,7 +98,7 @@ class AddExpenseViewModel {
         id: newExpenseId.toString(),
         title: title,
         amount: amount,
-        category: selectedCategory,
+        category: category,
         paymentMethod: selectedPaymentMethod,
         description: description,
         date: date,
@@ -148,18 +121,6 @@ class AddExpenseViewModel {
       timeController.clear();
       receiptImage = null;
 
-      // Show confirmation message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Expense Added')),
-      );
-
-      // Close the form
-      Navigator.pop(context);
-    } else {
-      // Show error message if validation fails
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid title and amount')),
-      );
     }
   }
 
@@ -197,9 +158,7 @@ class AddExpenseViewModel {
 
 
       await expensesCollection.add(expenseData);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Expense successfully added')),
-      );
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: User not found')),

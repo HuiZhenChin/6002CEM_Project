@@ -2,12 +2,15 @@ import 'my_account.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class EditAccount extends StatefulWidget {
 
-  final String username, email;
+  final String username;
 
-  EditAccount({required this.username, required this.email});
+  EditAccount({required this.username});
 
   @override
   _EditAccountState createState() => _EditAccountState();
@@ -19,6 +22,7 @@ class _EditAccountState extends State<EditAccount> {
   late String _username;
   String _password = '';
   String _confirmPassword = '';
+  int _bottomNavIndex = 3;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -163,7 +167,7 @@ class _EditAccountState extends State<EditAccount> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Email: ${widget.email}', // Replace with actual email
+                    'Email: ', // Replace with actual email
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.black,
@@ -234,7 +238,7 @@ class _EditAccountState extends State<EditAccount> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => MyAccount(username: widget.username, email: widget.email),
+                            builder: (context) => MyAccount(username: widget.username),
                           ),
                         );
                       }
@@ -247,6 +251,12 @@ class _EditAccountState extends State<EditAccount> {
           ),
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 }

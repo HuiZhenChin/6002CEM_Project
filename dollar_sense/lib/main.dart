@@ -14,10 +14,13 @@ import 'invest_model.dart';
 import 'speed_dial.dart';
 import 'budget.dart';
 import 'budget_model.dart';
+import 'transaction_history.dart';
+import 'navigation_bar_view_model.dart';
+import 'currency_converter.dart';
 
 class MyApp extends StatefulWidget {
-  final String username, email;
-  MyApp({required this.username, required this.email});
+  final String username;
+  MyApp({required this.username});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -32,6 +35,7 @@ class _MyAppState extends State<MyApp> {
   double _income = 0.0;
   double _totalInvest = 0.0;
   double _totalBudget= 0.0;
+  double _currentNetWorth= 0.0;
 
   double get totalExpenses {
     return _totalExpenses;
@@ -94,6 +98,16 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  double get currentNetWorth {
+    return _currentNetWorth;
+  }
+
+  set currentNetWorth(double value) {
+    setState(() {
+      _currentNetWorth = value;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +115,7 @@ class _MyAppState extends State<MyApp> {
     _fetchIncome();
     _fetchTotalInvest();
     _fetchTotalBudget();
+    _fetchCurrentNetWorth();
   }
 
   void _onTabTapped(int index) {
@@ -113,18 +128,12 @@ class _MyAppState extends State<MyApp> {
         context,
         MaterialPageRoute(
           builder: (context) =>
-              AddCategoryPage(username: widget.username),
+              MyAccount(username: widget.username),
         ),
       );
     }
     else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              MyAccount(username: widget.username, email: widget.email),
-        ),
-      );
+
     }
   }
 
@@ -230,12 +239,28 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  Future<void> _fetchCurrentNetWorth() async {
+    // Fetch income, expenses, and budget
+    await _fetchIncome();
+    await _fetchTotalExpenses();
+    await _fetchTotalInvest();
+
+    // Calculate net worth
+    double netWorth = income - totalExpenses - totalInvest;
+
+    // Set the calculated net worth to the _currentNetWorth variable
+    setState(() {
+      _currentNetWorth = netWorth;
+    });
+  }
+
 
   Future<void> _refreshData() async {
     await _fetchTotalExpenses();
     await _fetchIncome();
     await _fetchTotalInvest();
     await _fetchTotalBudget();
+    await _fetchCurrentNetWorth();
   }
 
   @override
@@ -243,10 +268,12 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       routes: {
         '/income': (context) => IncomePage(username: widget.username, onIncomeUpdated: _fetchIncome),
-        '/invest': (context) => InvestPage(username: widget.username, onInvestAdded: _addInvest, email: widget.email ),
+        '/invest': (context) => InvestPage(username: widget.username, onInvestAdded: _addInvest ),
         '/addExpenses': (context) => AddExpensePage(onExpenseAdded: _addExpense, username: widget.username),
-        '/profile': (context) => MyAccount(username: widget.username, email: widget.email),
+        '/profile': (context) => MyAccount(username: widget.username),
         '/budget': (context) => BudgetPage(username: widget.username, onBudgetAdded: _addBudget,),
+        '/history': (context) => TransactionHistoryPage(username: widget.username),
+        '/category': (context) => AddCategoryPage(username: widget.username),
       },
       home: Scaffold(
         appBar: AppBar(
@@ -278,7 +305,13 @@ class _MyAppState extends State<MyApp> {
                         icon: Icon(Icons.attach_money),
                         iconSize: 30,
                         onPressed: () {
-                          // Implement action for money converter
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CurrencyConverterPage(username: widget.username),
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -288,8 +321,14 @@ class _MyAppState extends State<MyApp> {
                         icon: Icon(Icons.history),
                         iconSize: 30,
                         onPressed: () {
-                          // Implement action for history
-                        },
+                            Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                            builder: (context) =>
+                            TransactionHistoryPage(username: widget.username),
+                            ),
+                            );
+                            },
                       ),
                     ),
                     Padding(
@@ -330,7 +369,7 @@ class _MyAppState extends State<MyApp> {
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: MainCard(
                   title: "Current Net Worth",
-                  amount: '31758.88',
+                  amount: _currentNetWorth.toStringAsFixed(2),
                 ),
               ),
               Padding(
@@ -382,7 +421,7 @@ class _MyAppState extends State<MyApp> {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: CustomNavigationBar(
           currentIndex: _bottomNavIndex,
-          onTabTapped: _onTabTapped,
+          onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
         ).build(),
       ),
     );

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'view_expenses.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,9 @@ import 'add_expense_view_model.dart';
 import 'currency_input_formatter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'transaction_history_view_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 Future<void> main() async {
   await Firebase.initializeApp(
@@ -34,13 +38,96 @@ class AddExpensePage extends StatefulWidget {
 class _AddExpensePageState extends State<AddExpensePage> {
   final _formKey = GlobalKey<FormState>();
   final viewModel = AddExpenseViewModel();
-  final historyViewModel= TransactionHistoryViewModel();
+  final historyViewModel = TransactionHistoryViewModel();
+  List<String> _budgetCategories = [];
+  bool _isLoading = true;
+  String selectedCategory = "";
+  int _bottomNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    viewModel.categoryController.text = viewModel.selectedCategory;
     viewModel.paymentMethodController.text = viewModel.selectedPaymentMethod;
+  }
+
+  String? _validateField(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName cannot be empty';
+    }
+
+    return null;
+  }
+
+  String? _validateAmount(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Amount cannot be empty';
+    }
+    if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value)) {
+      return 'Please enter a valid number';
+    }
+    double amountValue = double.parse(value);
+    if (amountValue <= 0) {
+      return 'Amount must be greater than 0';
+    }
+    return null;
+  }
+
+  Future<void> _fetchBudgetCategories() async {
+    try {
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .where('username', isEqualTo: widget.username)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        Map<String, dynamic>? userData =
+        userSnapshot.docs.first.data() as Map<String, dynamic>?;
+
+        setState(() {
+          _budgetCategories = (userData?['expense_category'] as List<dynamic>?)
+              ?.cast<String>() ??
+              [];
+          _isLoading = false;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No category created')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching categories: $e')),
+      );
+    }
+  }
+
+  void showCategoryDialog() {
+    _fetchBudgetCategories();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Select Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _budgetCategories
+                .map((category) =>
+                RadioListTile<String>(
+                  title: Text(category),
+                  value: category,
+                  groupValue: selectedCategory,
+                  onChanged: (value) {
+                    selectedCategory = value!;
+                    viewModel.categoryController.text = selectedCategory;
+                    Navigator.of(context).pop();
+                  },
+                ))
+                .toList(),
+          ),
+        );
+      },
+    );
   }
 
 
@@ -57,8 +144,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        ViewExpensesPage(username: widget.username)),
+                  builder: (context) =>
+                      ViewExpensesPage(username: widget.username),
+                ),
               );
             },
           ),
@@ -92,7 +180,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         controller: viewModel.categoryController,
                         labelText: 'Category',
                         inputFormatters: [],
-                        onTap: () => viewModel.showCategoryDialog(context),
+                        onTap: () => showCategoryDialog(),
+                        validator: (value) => _validateField(value, 'Category'),
                       ),
                       SizedBox(height: 10),
                       // Payment method input
@@ -101,6 +190,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         labelText: 'Payment Method',
                         inputFormatters: [],
                         onTap: () => viewModel.showPaymentMethodDialog(context),
+                        validator: (value) =>
+                            _validateField(value, 'Payment Method'),
                       ),
                       SizedBox(height: 10),
                       // Title input
@@ -108,6 +199,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         controller: viewModel.titleController,
                         labelText: 'Title',
                         inputFormatters: [],
+                        validator: (value) => _validateField(value, 'Title'),
                       ),
                       SizedBox(height: 10),
                       // Amount input
@@ -116,6 +208,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         labelText: 'Amount',
                         keyboardType: TextInputType.number,
                         inputFormatters: [CurrencyInputFormatter()],
+                        validator: _validateAmount,
                       ),
                       SizedBox(height: 10),
                       // Date input
@@ -124,6 +217,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         labelText: 'Date',
                         keyboardType: TextInputType.datetime,
                         inputFormatters: [],
+                        validator: (value) => _validateField(value, 'Date'),
                         onTap: () async {
                           final DateTime? pickedDate = await showDatePicker(
                             context: context,
@@ -170,36 +264,36 @@ class _AddExpensePageState extends State<AddExpensePage> {
                           color: Colors.grey[200],
                           borderRadius: BorderRadius.circular(20),
                         ),
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final pickedFile = await ImagePicker().pickImage(
-                                source: ImageSource.gallery,
-                              );
-                              if (pickedFile != null) {
-                                setState(() {
-                                  viewModel.receiptImage = File(pickedFile.path); // Update receiptImage
-                                });
-                                viewModel.convertImageToBase64(pickedFile); // Convert and set base64
-                              }
-                            },
-
-
-                            child: Text('Upload Receipt'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              elevation: 0,
-                              padding: EdgeInsets.symmetric(
-                                vertical: 15,
-                                horizontal: 20,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: Colors.black),
-                              ),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final pickedFile = await ImagePicker().pickImage(
+                              source: ImageSource.gallery,
+                            );
+                            if (pickedFile != null) {
+                              setState(() {
+                                viewModel.receiptImage = File(
+                                    pickedFile.path); // Update receiptImage
+                              });
+                              viewModel.convertImageToBase64(
+                                  pickedFile); // Convert and set base64
+                            }
+                          },
+                          child: Text('Upload Receipt'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(
+                              vertical: 15,
+                              horizontal: 20,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(color: Colors.black),
                             ),
                           ),
                         ),
-                        SizedBox(height: 10),
+                      ),
+                      SizedBox(height: 10),
                       // Display uploaded image
                       Container(
                         decoration: BoxDecoration(
@@ -277,8 +371,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                                                   viewModel
                                                                       .receiptImage!,
                                                                   fit: BoxFit
-                                                                      .cover,
-                                                                ),
+                                                                      .cover),
                                                         ),
                                                       ),
                                                       actions: [
@@ -300,8 +393,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                                       .receiptImage!.path)
                                                   : Image.file(
                                                       viewModel.receiptImage!,
-                                                      fit: BoxFit.cover,
-                                                    ),
+                                                      fit: BoxFit.cover),
                                             ),
                                           ),
                                           actions: [
@@ -363,16 +455,32 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                   color: Color(0xFF332B28),
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: () async {
-                                      viewModel.addExpense(widget.onExpenseAdded, widget.username, context,);
-                                      String specificText = "Expenses: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
-                                      await historyViewModel.addHistory(specificText, widget.username, context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Expense Added')),
+                                  onPressed: () {
+                                    if (_formKey.currentState?.validate() ??
+                                        false) {
+                                      viewModel.addExpense(
+                                          widget.onExpenseAdded,
+                                          widget.username,
+                                          context);
+                                      String specificText =
+                                          "Expenses: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
+                                      historyViewModel.addHistory(specificText,
+                                          widget.username, context);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text('Expense Added')),
                                       );
                                       Navigator.pop(context);
-                                    },
-
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                'Please correct the fields')),
+                                      );
+                                    }
+                                  },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     elevation: 0,
@@ -398,6 +506,12 @@ class _AddExpensePageState extends State<AddExpensePage> {
           ],
         ),
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+      ).build(),
     );
   }
 }
