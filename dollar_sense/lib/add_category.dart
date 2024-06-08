@@ -37,19 +37,26 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
           String,
           dynamic>?)?[fieldName]?.cast<String>() ?? [];
 
-      // Add the new category to the existing categories array
-      currentCategories.add(newCategory);
+      // Check if the new category already exists in the current categories
+      if (currentCategories.contains(newCategory)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Category already exists')),
+        );
+      } else {
+        // Add the new category to the existing categories array
+        currentCategories.add(newCategory);
 
-      // Update the categories array in Firestore
-      await FirebaseFirestore.instance.collection('dollar_sense')
-          .doc(userId)
-          .update({
-        fieldName: currentCategories,
-      });
+        // Update the categories array in Firestore
+        await FirebaseFirestore.instance.collection('dollar_sense')
+            .doc(userId)
+            .update({
+          fieldName: currentCategories,
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('New category successfully added')),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('New category successfully added')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: User not found')),

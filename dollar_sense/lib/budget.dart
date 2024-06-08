@@ -97,7 +97,7 @@ class _BudgetPageState extends State<BudgetPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFFFAE5CC),
-        title: Text('Invest'),
+        title: Text('Budget'),
         actions: [
           IconButton(
             icon: Icon(Icons.format_list_bulleted_sharp),

@@ -365,9 +365,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                 child: ElevatedButton(
                                   onPressed: () async {
                                       viewModel.addExpense(widget.onExpenseAdded, widget.username, context,);
-                                      String specificText = "Expenses:${viewModel.titleController} with ${viewModel.amountController}";
-                                      DateTime currentDate = DateTime.now();
-                                      historyViewModel.addHistory(specificText, currentDate, "username", context);
+                                      String specificText = "Expenses: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
+                                      await historyViewModel.addHistory(specificText, widget.username, context);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Expense Added')),
                                       );
