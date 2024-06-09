@@ -32,6 +32,7 @@ class _EditBudgetState extends State<EditBudget> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
   final historyViewModel = TransactionHistoryViewModel();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   late TextEditingController amountController;
@@ -405,12 +406,10 @@ class _EditBudgetState extends State<EditBudget> {
         ),
       ),
       floatingActionButton: CustomSpeedDial(),
-      floatingActionButtonLocation:
-      FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped:
-        NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }

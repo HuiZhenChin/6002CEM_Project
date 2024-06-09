@@ -5,22 +5,22 @@ import 'budget_model.dart';
 class BudgetViewModel {
   TextEditingController categoryController = TextEditingController();
   TextEditingController amountController = TextEditingController();
-  TextEditingController monthController= TextEditingController();
-  TextEditingController yearController= TextEditingController();
+  TextEditingController monthController = TextEditingController();
+  TextEditingController yearController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> addBudget(Function(Budget) onBudgetAdded, String username, BuildContext context) async {
     String category = categoryController.text.trim();
     double amount = double.tryParse(amountController.text.trim()) ?? 0.0;
-    String month= monthController.text.trim();
-    String year= yearController.text.trim();
+    String month = monthController.text.trim();
+    String year = yearController.text.trim();
 
     if (category.isNotEmpty && amount > 0 && month.isNotEmpty && year.isNotEmpty) {
       // Check if the category already exists for the user
-      bool categoryExists = await checkCategoryExists(username, category);
+      bool categoryExists = await checkExists(username, category, month, year);
       if (categoryExists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Category already exists')),
+          SnackBar(content: Text('Budget entry for this category, month, and year already exists')),
         );
         return;
       }
@@ -40,7 +40,6 @@ class BudgetViewModel {
       // Update the counter document with the new currentId
       await counterDoc.set({'currentId': newBudgetId});
 
-
       Budget newBudget = Budget(
         id: newBudgetId.toString(),
         category: category,
@@ -58,7 +57,7 @@ class BudgetViewModel {
     }
   }
 
-  Future<bool> checkCategoryExists(String username, String category) async {
+  Future<bool> checkExists(String username, String category, String month, String year) async {
     try {
       QuerySnapshot userSnapshot = await _firestore
           .collection('dollar_sense')
@@ -72,6 +71,8 @@ class BudgetViewModel {
             .doc(userId)
             .collection('budget')
             .where('budget_category', isEqualTo: category)
+            .where('budget_month', isEqualTo: month)
+            .where('budget_year', isEqualTo: year)
             .get();
 
         return budgetSnapshot.docs.isNotEmpty;
@@ -116,5 +117,4 @@ class BudgetViewModel {
       );
     }
   }
-
 }

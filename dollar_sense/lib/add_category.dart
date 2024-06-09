@@ -21,6 +21,12 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+
+  }
+
   Future<void> saveCategoryToFirestore(String username, String newCategory,
       BuildContext context) async {
     // Query Firestore to get the user ID from the username

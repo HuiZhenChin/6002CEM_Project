@@ -23,12 +23,15 @@ class _IncomePageState extends State<IncomePage> {
   double _fetchedIncome = 0.0;
   final historyViewModel = TransactionHistoryViewModel();
   final _formKey = GlobalKey<FormState>();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
+
 
   @override
   void initState() {
     super.initState();
     _fetchIncome();
+
   }
 
   Future<void> _fetchIncome() async {

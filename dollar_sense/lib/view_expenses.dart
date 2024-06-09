@@ -25,13 +25,16 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
   List<Expense> expenses = [];
   final viewModel= AddExpenseViewModel();
   final historyViewModel= TransactionHistoryViewModel();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
+
 
   @override
   void initState() {
     super.initState();
     _loadDefaultImage();
     _fetchExpenses();
+
   }
 
 

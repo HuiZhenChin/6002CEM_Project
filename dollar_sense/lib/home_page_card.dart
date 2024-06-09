@@ -32,7 +32,7 @@ class HomePageCard extends StatelessWidget {
                 SizedBox(height: 8.0),
                 Center(
                   child: Text(
-                    '\RM $amount',
+                    '\ $amount',
                     style: TextStyle(
                       fontSize: 20.0, // Increase font size for the amount
                       fontWeight: FontWeight.bold,

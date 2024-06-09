@@ -24,7 +24,7 @@ class CustomNavigationBar {
             iconData = Icons.home;
             break;
           case 1:
-            iconData = Icons.notifications;
+            iconData = Icons.calendar_month_rounded;
             break;
           case 2:
             iconData = Icons.insert_chart_rounded;

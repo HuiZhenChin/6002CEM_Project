@@ -34,6 +34,7 @@ class _EditExpenseState extends State<EditExpense> {
   final historyViewModel= TransactionHistoryViewModel();
   List<String> _budgetCategories = [];
   bool _isLoading = true;
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   String originalCategory = '';
@@ -62,6 +63,7 @@ class _EditExpenseState extends State<EditExpense> {
         TextEditingController(text: widget.expense.description);
     dateController = TextEditingController(text: widget.expense.date);
     timeController = TextEditingController(text: widget.expense.time);
+
 
   }
 

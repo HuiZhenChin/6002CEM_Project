@@ -34,7 +34,7 @@ class MainCard extends StatelessWidget {
                 SizedBox(height: 8.0),
                 Center(
                   child: Text(
-                    '\RM $amount',
+                    '\ $amount',
                     style: TextStyle(
                       fontSize: 32.0,
                       fontWeight: FontWeight.bold,

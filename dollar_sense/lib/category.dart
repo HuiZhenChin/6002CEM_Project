@@ -18,6 +18,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   List<String> _expenseCategories = [];
   List<String> _budgetCategories = [];
   bool _isLoading = true;
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   @override

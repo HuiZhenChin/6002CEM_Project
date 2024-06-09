@@ -24,6 +24,7 @@ class ViewBudgetPage extends StatefulWidget {
 
 class _ViewBudgetPageState extends State<ViewBudgetPage> {
   int currentIndex = 0;
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
   List<Budget> budgets = [];
   Map<String, bool> categoryNotifications = {};
@@ -52,6 +53,13 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       // Populate categoryNotifications map
       for (var notification in budgetNotificationsList) {
         categoryNotifications[notification.category] = true;
+      }
+
+      // Populate categoriesWithNotificationsNoBudgets
+      for (var notification in budgetNotificationsList) {
+        if (!budgets.any((budget) => budget.category == notification.category)) {
+          categoriesWithNotificationsNoBudgets.add(notification.category);
+        }
       }
 
     });
@@ -427,8 +435,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped:
-        NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }
@@ -541,6 +548,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
               ],
             ),
           ),
+
       ],
     );
   }

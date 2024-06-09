@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-import 'package:dollar_sense/view_budget.dart';
+import 'view_budget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -29,12 +28,14 @@ class _BudgetPageState extends State<BudgetPage> {
   String selectedCategory = "";
   final viewModel = BudgetViewModel();
   final historyViewModel = TransactionHistoryViewModel();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchBudgetCategories();
+
   }
 
   Future<void> _fetchBudgetCategories() async {
@@ -313,11 +314,12 @@ class _BudgetPageState extends State<BudgetPage> {
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     if (_formKey.currentState?.validate() ?? false) {
-                                      bool categoryExists = await viewModel
-                                          .checkCategoryExists(
+                                      bool exists = await viewModel
+                                          .checkExists(
                                           widget.username,
-                                          viewModel.categoryController.text.trim());
-                                      if (categoryExists) {
+                                          viewModel.categoryController.text.trim(),
+                                          viewModel.monthController.text, viewModel.yearController.text);
+                                      if (exists) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(content: Text('Category already exists')),
                                         );

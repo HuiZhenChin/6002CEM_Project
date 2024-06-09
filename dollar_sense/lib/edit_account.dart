@@ -22,7 +22,13 @@ class _EditAccountState extends State<EditAccount> {
   late String _username;
   String _password = '';
   String _confirmPassword = '';
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 3;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();

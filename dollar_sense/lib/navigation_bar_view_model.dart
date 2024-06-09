@@ -17,12 +17,7 @@ class NavigationBarViewModel {
         );
         
       } else if (index == 1) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotificationsPage(username: username),
-          ),
-        );
+
       }else if (index == 3) {
         Navigator.push(
           context,
@@ -33,4 +28,7 @@ class NavigationBarViewModel {
       }
     };
   }
+
+
+
 }

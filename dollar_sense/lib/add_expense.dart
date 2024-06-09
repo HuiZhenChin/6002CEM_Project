@@ -42,12 +42,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
   List<String> _budgetCategories = [];
   bool _isLoading = true;
   String selectedCategory = "";
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
+
 
   @override
   void initState() {
     super.initState();
     viewModel.paymentMethodController.text = viewModel.selectedPaymentMethod;
+
   }
 
   String? _validateField(String? value, String fieldName) {

@@ -23,6 +23,7 @@ class _MyAccountState extends State<MyAccount> {
   File? _image;
   String _username = '';
   String _email = '';
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 3;
 
   @override

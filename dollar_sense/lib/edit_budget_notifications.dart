@@ -31,6 +31,7 @@ class EditBudgetNotifications extends StatefulWidget {
 class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   late TextEditingController notificationCategoryController;
@@ -57,6 +58,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     originalReminderType= widget.budgetNotifications.reminderType;
     originalFirstReminder= widget.budgetNotifications.firstReminder;
     originalSecondReminder= widget.budgetNotifications.secondReminder;
+
   }
 
   @override
@@ -214,7 +216,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Select 1st Reminder (Percentage left)'),
+          title: Text('Select 1st Reminder (Remaining Budget) %'),
           content: Container(
             width: double.maxFinite,
             child: ListView.builder(
@@ -223,7 +225,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
               itemBuilder: (context, index) {
                 final percentage = (index + 1) * 10.0;
                 return ListTile(
-                  title: Text('$percentage%'),
+                  title: Text('$percentage'),
                   onTap: () {
                     setState(() {
                       firstReminderController.text = '$percentage%';
@@ -434,12 +436,10 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
         ),
       ),
       floatingActionButton: CustomSpeedDial(),
-      floatingActionButtonLocation:
-      FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped:
-        NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }

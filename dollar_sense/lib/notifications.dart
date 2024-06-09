@@ -7,56 +7,31 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 import 'budget_notifications_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
 
 class NotificationsPage extends StatefulWidget {
   final String username;
 
-  const NotificationsPage({required this.username});
+  NotificationsPage({required this.username});
 
   @override
   _NotificationsPageState createState() => _NotificationsPageState();
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  List<BudgetNotifications> budgetNotificationsList = [];
-  Map<String, double> categoryExpenses = {};
-  Map<String, double> categoryBudgets = {};
-  int _bottomNavIndex = 1;
-  List<Budget> budgets = [];
+  final navigationBarViewModel = NavigationBarViewModel();
+  int _bottomNavIndex = 0;
+  List<DocumentSnapshot> notifications = [];
 
   @override
   void initState() {
     super.initState();
-    // Call the fetching methods in initState to ensure they're executed only once
-    _fetchData();
+    fetchNotifications(widget.username);
   }
 
-  Future<void> _fetchData() async {
-    await _fetchBudgets();
-    await _fetchExpenseCategories();
-  }
-
-  Future<void> _fetchNotifications() async {
-    try {
-      final QuerySnapshot budgetNotificationsSnapshot = await FirebaseFirestore
-          .instance
-          .collection('dollar_sense')
-          .doc(widget.username)
-          .collection('budgetNotifications')
-          .get();
-
-      setState(() {
-        budgetNotificationsList = budgetNotificationsSnapshot.docs
-            .map((doc) => BudgetNotifications.fromDocument(doc))
-            .toList();
-      });
-    } catch (e) {
-      print('Error fetching notifications: $e');
-    }
-  }
-
-  Future<Map<String, double>> _fetchExpenseCategories() async {
-    String username = widget.username;
+  Future<void> fetchNotifications(String username) async {
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
         .collection('dollar_sense')
         .where('username', isEqualTo: username)
@@ -64,46 +39,61 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
-      QuerySnapshot expenseSnapshot = await FirebaseFirestore.instance
+      QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
-          .collection('expenses')
+          .collection('notifications')
           .get();
 
-      Map<String, double> categoryExpenses = {};
-      expenseSnapshot.docs.forEach((doc) {
-        Expense expense = Expense.fromDocument(doc);
-        if (categoryExpenses.containsKey(expense.category)) {
-          categoryExpenses[expense.category] =
-              (categoryExpenses[expense.category] ?? 0) + expense.amount;
-        } else {
-          categoryExpenses[expense.category] = expense.amount;
-        }
-      });
+      List<DocumentSnapshot> fetchedNotifications = [];
 
-      return categoryExpenses;
-    } else {
-      return {};
+      for (var doc in notificationsSnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+        if (data.containsKey('category') &&
+            data.containsKey('month') &&
+            data.containsKey('year') &&
+            data.containsKey('read_first_reminder') ||
+            data.containsKey('read_second_reminder')) {
+          // Add the document if it has any of the reminders set to false
+          if (data['read_first_reminder'] == false ||
+              data['read_second_reminder'] == false) {
+            fetchedNotifications.add(doc);
+          }
+        }
+      }
+
+      setState(() {
+        notifications = fetchedNotifications;
+      });
     }
   }
 
-  Future<void> _fetchBudgets() async {
-    try {
-      final QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
-          .collection('dollar_sense')
-          .doc(widget.username)
-          .collection('budget')
-          .get();
+  void _markAsRead(DocumentSnapshot notification) async {
+    Map<String, dynamic> data = notification.data() as Map<String, dynamic>;
 
-      setState(() {
-        categoryBudgets = {};
-        budgetSnapshot.docs.forEach((doc) {
-          Budget budget = Budget.fromDocument(doc);
-          categoryBudgets[budget.category] = budget.amount;
-        });
-      });
-    } catch (e) {
-      print('Error fetching budgets: $e');
+    String documentId = '${data['category']}_${data['month']}_${data['year']}';
+    String userId = notification.reference.parent.parent!.id;
+
+    // Update both reminders if needed
+    Map<String, dynamic> updates = {};
+    if (data['read_first_reminder'] == false) {
+      updates['read_first_reminder'] = true;
+    }
+    if (data['read_second_reminder'] == false) {
+      updates['read_second_reminder'] = true;
+    }
+
+    if (updates.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('notifications')
+          .doc(documentId)
+          .update(updates);
+
+      // Fetch the notifications again to update the state
+      await fetchNotifications(widget.username);
     }
   }
 
@@ -111,74 +101,47 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Notifications'),
+        title: Text("Notifications"),
       ),
-      body: FutureBuilder(
-        future: _fetchBudgets(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error fetching data'));
-          } else {
-            return ListView.builder(
-              itemCount: budgets.length,
-              itemBuilder: (context, index) {
-                final budget = budgets[index];
-                final double expenseAmount = categoryExpenses[budget
-                    .category] ?? 0;
-                final double remainingBudget = budget.amount - expenseAmount;
+      body: notifications.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          var notification = notifications[index];
+          var data = notification.data() as Map<String, dynamic>;
+          String message = '';
 
-                // Check if both expense and budget amounts are found for the category
-                if (expenseAmount > 0 && budget.amount > 0) {
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Table(
-                        defaultVerticalAlignment: TableCellVerticalAlignment
-                            .middle,
-                        children: [
-                          TableRow(
-                            children: [
-                              Text('Category', style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              Text('Expense Amount', style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              Text('Budget Amount', style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              Text('Remaining Budget', style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          TableRow(
-                            children: [
-                              Text(budget.category),
-                              Text('\$${expenseAmount.toStringAsFixed(2)}'),
-                              Text('\$${budget.amount.toStringAsFixed(2)}'),
-                              Text('\$${remainingBudget.toStringAsFixed(2)}'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  // Display only budget information if expense or budget amount is not found
-                  return ListTile(
-                    title: Text(budget.category),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Budget: \$${budget.amount.toStringAsFixed(2)}'),
-                      ],
-                    ),
-                  );
-                }
-              },
-            );
+          if (data['read_first_reminder'] == false) {
+            message +=
+            "${data['category']} : Alert: ${data['budgetNotifications_first_reminder']}% remaining!\n";
           }
+          if (data['read_second_reminder'] == false) {
+            message += "${data['category']}: Budget Exceeded!";
+          }
+
+          return ListTile(
+            title: Text(message.trim()),
+            trailing: IconButton(
+              icon: Icon(Icons.check),
+              onPressed: () {
+                _markAsRead(notification);
+              },
+            ),
+          );
         },
       ),
+      floatingActionButton: CustomSpeedDial(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTabTapped: (index) {
+          setState(() {
+            _bottomNavIndex = index;
+          });
+          NavigationBarViewModel.onTabTapped(context, widget.username);
+        },
+      ).build(),
     );
   }
 }

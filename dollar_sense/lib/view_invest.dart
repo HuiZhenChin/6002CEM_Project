@@ -20,6 +20,7 @@ class ViewInvestPage extends StatefulWidget {
 
 class _ViewInvestPageState extends State<ViewInvestPage> {
   int currentIndex = 0;
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
   List<Invest> invests = [];
   final viewModel= InvestViewModel();
@@ -29,6 +30,7 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
   void initState() {
     super.initState();
     _fetchInvest();
+
   }
 
   Future<List<Invest>> _fetchInvest() async {

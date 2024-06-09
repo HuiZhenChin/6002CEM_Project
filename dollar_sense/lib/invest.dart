@@ -23,6 +23,7 @@ class _InvestPageState extends State<InvestPage> {
   final _formKey = GlobalKey<FormState>();
   final viewModel = InvestViewModel();
   final historyViewModel= TransactionHistoryViewModel();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   @override

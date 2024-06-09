@@ -24,6 +24,7 @@ class EditInvest extends StatefulWidget {
 
 class _EditInvestState extends State<EditInvest> {
   int currentIndex = 0;
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
   final _formKey = GlobalKey<FormState>();
   bool _isEditing = false;

@@ -29,12 +29,14 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
   final List<String> _secondReminderOptions = ['None', 'Budget Exceeded'];
   String selectedCategory = "";
   final viewModel = BudgetNotificationsViewModel();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchBudgetCategories();
+
   }
 
   Future<void> _fetchBudgetCategories() async {
@@ -152,7 +154,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Select 1st Reminder (Percentage left)'),
+          title: Text('Select 1st Reminder (Remaining Budget) %'),
           content: Container(
             width: double.maxFinite,
             child: ListView.builder(
@@ -161,7 +163,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
               itemBuilder: (context, index) {
                 final percentage = (index + 1) * 10.0;
                 return ListTile(
-                  title: Text('$percentage%'),
+                  title: Text('$percentage'),
                   onTap: () {
                     setState(() {
                       _firstReminderAmount = percentage;
