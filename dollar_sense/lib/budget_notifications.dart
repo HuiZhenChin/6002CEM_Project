@@ -127,7 +127,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                       if (_selectedReminderType == 'Basic') {
                         // Update text fields for Basic reminder type
                         viewModel.reminderTypeController.text = "Basic";
-                        viewModel.firstReminderController.text = "10";
+                        viewModel.firstReminderController.text = "10%";
                         viewModel.secondReminderController.text = 'Budget Exceeded';
                       } else {
                         // Update text fields for Custom reminder type
@@ -147,7 +147,6 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
     );
   }
 
-
   void _showFirstReminderDialog() async {
     await showDialog(
       context: context,
@@ -166,6 +165,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                   onTap: () {
                     setState(() {
                       _firstReminderAmount = percentage;
+                      viewModel.firstReminderController.text = '$percentage%';
                     });
                     Navigator.of(context).pop();
                   },
@@ -195,6 +195,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                   onTap: () {
                     setState(() {
                       _secondReminderOption = _secondReminderOptions[index];
+                      viewModel.secondReminderController.text = _secondReminderOption;
                     });
                     Navigator.of(context).pop();
                   },
@@ -245,26 +246,32 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                         validator: (value) => _validateField(value, 'Category'),
                       ),
                       SizedBox(height: 10),
-                       CustomInputField(
-                          controller: viewModel.reminderTypeController,
-                          labelText: 'Reminder Type',
-                          inputFormatters: [],
-                          onTap: () => _showReminderTypeDialog(),
-                        ),
+                      CustomInputField(
+                        controller: viewModel.reminderTypeController,
+                        labelText: 'Reminder Type',
+                        inputFormatters: [],
+                        onTap: () => _showReminderTypeDialog(),
+                        validator: (value) => _validateField(value, 'Reminder Type'),
+                      ),
                       SizedBox(height: 10),
-                       CustomInputField(
-                          controller: viewModel.firstReminderController,
-                          labelText: '1st Reminder',
-                          inputFormatters: [],
-                          onTap: _showFirstReminderDialog,
-                        ),
+                      CustomInputField(
+                        controller: viewModel.firstReminderController,
+                        labelText: '1st Reminder',
+                        inputFormatters: [],
+                        onTap: _selectedReminderType == 'Basic' ? null : _showFirstReminderDialog,
+                        readOnly: _selectedReminderType == 'Basic',
+                        validator: (value) => _validateField(value, '1st Reminder'),
+                      ),
                       SizedBox(height: 10),
-                       CustomInputField(
-                          controller: viewModel.secondReminderController,
-                          labelText: '2st Reminder',
-                          inputFormatters: [],
-                          onTap: _showSecondReminderDialog,
-                        ),
+                      CustomInputField(
+                        controller: viewModel.secondReminderController,
+                        labelText: '2nd Reminder',
+                        inputFormatters: [],
+                        onTap: _selectedReminderType == 'Basic' ? null : _showSecondReminderDialog,
+                        readOnly: _selectedReminderType == 'Basic',
+                        validator: (value) => _validateField(value, '2nd Reminder'),
+                      ),
+                      SizedBox(height: 20),
                       Row(
                         children: [
                           Expanded(
@@ -304,16 +311,17 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                                   color: Color(0xFF332B28),
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: () async {
-                                    viewModel.addBudgetNotifications(
-                                        widget.onBudgetNotificationsAdded,
-                                        widget.username, context);
+                                  onPressed: () {
+                                    if (_formKey.currentState!.validate()) {
+                                      viewModel.addBudgetNotifications(
+                                          widget.onBudgetNotificationsAdded,
+                                          widget.username, context);
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(
-                                          'Budget Notifications Added')),
-                                    );
-                                    Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Budget Notifications Added')),
+                                      );
+                                      Navigator.pop(context);
+                                    }
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,

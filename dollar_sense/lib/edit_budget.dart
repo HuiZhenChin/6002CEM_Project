@@ -1,15 +1,15 @@
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/budget_notifications.dart';
+import 'package:dollar_sense/budget_notifications_model.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'budget_view_model.dart';
-import 'currency_input_formatter.dart';
 import 'budget_model.dart';
-import 'add_expense_custom_input_view.dart';
-import 'transaction_history_view_model.dart';
 import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
+import 'transaction_history_view_model.dart';
+import 'add_expense_custom_input_view.dart';
+import 'currency_input_formatter.dart';
 
 class EditBudget extends StatefulWidget {
   final Function(Budget) onBudgetUpdated;
@@ -17,11 +17,12 @@ class EditBudget extends StatefulWidget {
   final Budget budget;
   final String documentId;
 
-  const EditBudget(
-      {required this.onBudgetUpdated,
-        required this.username,
-        required this.budget,
-        required this.documentId});
+  const EditBudget({
+    required this.onBudgetUpdated,
+    required this.username,
+    required this.budget,
+    required this.documentId,
+  });
 
   @override
   _EditBudgetState createState() => _EditBudgetState();
@@ -41,6 +42,7 @@ class _EditBudgetState extends State<EditBudget> {
   late String originalMonth;
   late String originalYear;
 
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +55,7 @@ class _EditBudgetState extends State<EditBudget> {
     originalAmount = widget.budget.amount;
     originalMonth = widget.budget.month;
     originalYear = widget.budget.year;
+
   }
 
   @override
@@ -96,7 +99,8 @@ class _EditBudgetState extends State<EditBudget> {
         }
 
         String specificText = "Edit Budget: ${widget.budget.category} ";
-        await historyViewModel.addHistory(specificText, widget.username, context);
+        await historyViewModel.addHistory(
+            specificText, widget.username, context);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -156,70 +160,111 @@ class _EditBudgetState extends State<EditBudget> {
     String? selectedMonth;
 
     await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
+        context: context,
+        builder: (BuildContext context) {
+      return AlertDialog(
           title: Text('Select Month and Year'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              DropdownButton<String>(
-                hint: Text('Select Month'),
-                value: selectedMonth,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedMonth = newValue;
-                  });
-                },
-                items: DateFormat.MMMM().dateSymbols.MONTHS.map((String month) {
-                  return DropdownMenuItem<String>(
-                    value: month,
-                    child: Text(month),
-                  );
-                }).toList(),
-              ),
-              DropdownButton<int>(
-                hint: Text('Select Year'),
-                value: selectedYear,
-                onChanged: (int? newValue) {
-                  setState(() {
-                    selectedYear = newValue;
-                  });
-                },
-                items: List.generate(101, (index) => 2000 + index).map((int year) {
-                  return DropdownMenuItem<int>(
-                    value: year,
-                    child: Text(year.toString()),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('CANCEL'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('OK'),
-              onPressed: () {
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            DropdownButton<String>(
+              hint: Text('Select Month'),
+              value: selectedMonth,
+              onChanged: (String? newValue) {
                 setState(() {
-                  if (selectedMonth != null) {
-                    monthController.text = selectedMonth!;
-                  }
-                  if (selectedYear != null) {
-                    yearController.text = selectedYear.toString();
-                  }
+                  selectedMonth = newValue;
                 });
-                Navigator.of(context).pop();
               },
+              items: DateFormat.MMMM()
+                  .dateSymbols
+                  .MONTHS
+                  .map((String month) {
+                return DropdownMenuItem<String>(
+                  value: month,
+                  child: Text(month),
+                );
+              })
+                  .toList(),
+            ),
+            DropdownButton<int>(
+              hint: Text('Select Year'),
+              value: selectedYear,
+              onChanged: (int? newValue) {
+                setState(() {
+                  selectedYear = newValue;
+                });
+              },
+              items: List.generate(101, (index) => 2000 + index)
+                  .map((int year) {
+                return DropdownMenuItem<int>(
+                  value: year,
+                  child: Text(year.toString()),
+                );
+              })
+                  .toList(),
             ),
           ],
-        );
-      },
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text('CANCEL'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: Text('OK'),
+            onPressed: () {
+              setState(() {
+                if (selectedMonth != null) {
+                  monthController.text = selectedMonth!;
+                }
+                if (selectedYear != null) {
+                  yearController.text = selectedYear.toString();
+                }
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+        },
     );
+  }
+
+// Fetch Budget Notifications Data
+  Future<List<BudgetNotifications>> _fetchBudgetNotifications() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      QuerySnapshot budgetNotificationsSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budgetNotifications')
+          .where('budgetNotifications_category', isEqualTo: widget.budget.category)
+          .get();
+
+      return budgetNotificationsSnapshot.docs
+          .map((doc) => BudgetNotifications.fromDocument(doc))
+          .toList();
+    } else {
+      return [];
+    }
+
+  }
+
+
+  String? _validateField(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName cannot be empty';
+    }
+
+    return null;
   }
 
   @override
@@ -228,7 +273,6 @@ class _EditBudgetState extends State<EditBudget> {
       appBar: AppBar(
         backgroundColor: Color(0xFFFAE5CC),
         title: Text('Edit Budget'),
-
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -304,7 +348,8 @@ class _EditBudgetState extends State<EditBudget> {
                                 child: ElevatedButton(
                                   onPressed: () {
                                     _cancelEdit();
-                                    Navigator.pop(context); // Dismiss the EditBudget screen
+                                    Navigator.pop(
+                                        context); // Dismiss the EditBudget screen
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
@@ -360,11 +405,14 @@ class _EditBudgetState extends State<EditBudget> {
         ),
       ),
       floatingActionButton: CustomSpeedDial(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation:
+      FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped:
+        NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }
 }
+

@@ -15,6 +15,14 @@ class BudgetNotificationsViewModel {
     String firstReminder = firstReminderController.text;
     String secondReminder = secondReminderController.text;
 
+    bool categoryExists = await checkCategoryExists(username, category);
+    if (categoryExists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Category already set notifications')),
+      );
+      return;
+    }
+
       DocumentReference counterDoc = FirebaseFirestore.instance
           .collection('counters')
           .doc('budgetNotificationsCounter');
@@ -54,6 +62,31 @@ class BudgetNotificationsViewModel {
 
     }
 
+  Future<bool> checkCategoryExists(String username, String category) async {
+    try {
+      QuerySnapshot userSnapshot = await _firestore
+          .collection('dollar_sense')
+          .where('username', isEqualTo: username)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('budgetNotifications')
+            .where('budgetNotifications_category', isEqualTo: category)
+            .get();
+
+        return budgetSnapshot.docs.isNotEmpty;
+      } else {
+        return false; // User not found
+      }
+    } catch (e) {
+      print('Error checking category existence: $e');
+      return true; // Assume category exists to prevent adding duplicate budgets
+    }
+  }
 
   Future<void> _saveBudgetNotificationsToFirestore(BudgetNotifications budgetNotifications, String username, BuildContext context) async {
     // Query Firestore to get the user ID from the username

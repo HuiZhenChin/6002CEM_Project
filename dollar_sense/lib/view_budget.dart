@@ -1,16 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dollar_sense/budget_notifications.dart';
 import 'package:dollar_sense/budget_notifications_model.dart';
+import 'package:dollar_sense/budget_view_model.dart';
 import 'package:dollar_sense/edit_budget.dart';
+import 'package:dollar_sense/edit_budget_notifications.dart';
 import 'package:flutter/material.dart';
+import 'add_expense_model.dart';
 import 'budget_model.dart';
-import 'package:flutter/services.dart';
 import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 import 'transaction_history_view_model.dart';
-import 'budget_view_model.dart';
-import 'add_expense_model.dart';
+import 'budget_notifications_model.dart';
 
 class ViewBudgetPage extends StatefulWidget {
   final String username;
@@ -25,14 +26,35 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
   int currentIndex = 0;
   int _bottomNavIndex = 0;
   List<Budget> budgets = [];
+  Map<String, bool> categoryNotifications = {};
+  List<String> categoriesWithNotificationsNoBudgets = [];
   final viewModel = BudgetViewModel();
   final historyViewModel = TransactionHistoryViewModel();
-  List<BudgetNotifications> budgetNotifications = [];
+  List<BudgetNotifications> budgetNotificationsList = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchBudget();
+    _fetchBudget().then((fetchedBudgets) async {
+      setState(() {
+        budgets = fetchedBudgets;
+      });
+
+      for (var budget in fetchedBudgets) {
+        BudgetNotifications? notifications = await _fetchNotificationsForBudget(budget);
+        if (notifications != null) {
+          setState(() {
+            budgetNotificationsList.add(notifications);
+          });
+        }
+      }
+
+      // Populate categoryNotifications map
+      for (var notification in budgetNotificationsList) {
+        categoryNotifications[notification.category] = true;
+      }
+
+    });
   }
 
   Future<List<Budget>> _fetchBudget() async {
@@ -55,28 +77,48 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           .map((doc) => Budget.fromDocument(doc))
           .toList();
     } else {
-      // Return an empty list if no budget found
       return [];
     }
   }
 
+  Future<BudgetNotifications?> _fetchNotificationsForBudget(Budget budget) async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+
+      QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budgetNotifications')
+          .where('budgetNotifications_category', isEqualTo: budget.category)
+          .limit(1)
+          .get();
+
+      if (notificationsSnapshot.docs.isNotEmpty) {
+        return BudgetNotifications.fromDocument(notificationsSnapshot.docs.first);
+      }
+    }
+    return null;
+  }
+
+
+
   void _updateBudget(Budget editedBudget) {
     setState(() {
-      // Find the index of the edited expense in the expenses list
-      int index =
-      budgets.indexWhere((budget) => budget.id == editedBudget.id);
+      int index = budgets.indexWhere((budget) => budget.id == editedBudget.id);
       if (index != -1) {
-        // Replace the edited expense with the new one
         budgets[index] = editedBudget;
       }
     });
   }
 
   void _editBudget(Budget budget) async {
-    // Retrieve the document ID associated with the selected expense
     String documentId = await _getDocumentId(budget);
-
-    // Navigate to the edit expense screen and pass the document ID
     Budget editedBudget = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -90,12 +132,11 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       ),
     );
 
-    // Check if an expense was edited
     if (editedBudget != null) {
-      // Update the UI with the edited expense
       _updateBudget(editedBudget);
     }
   }
+
 
   Future<String> _getDocumentId(Budget budget) async {
     String username = widget.username;
@@ -106,7 +147,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
 
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
-      QuerySnapshot expenseSnapshot = await FirebaseFirestore.instance
+      QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
           .collection('budget')
@@ -114,11 +155,10 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           .limit(1)
           .get();
 
-      if (expenseSnapshot.docs.isNotEmpty) {
-        return expenseSnapshot.docs.first.id;
+      if (budgetSnapshot.docs.isNotEmpty) {
+        return budgetSnapshot.docs.first.id;
       }
     }
-    // Return an empty string or handle the case where the document ID is not found
     return '';
   }
 
@@ -136,15 +176,13 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           .collection('dollar_sense')
           .doc(userId)
           .collection('budget')
-          .doc(documentId) // Specify the document ID of the investment to delete
+          .doc(documentId)
           .delete();
 
       setState(() {
-        // Remove the deleted investment from the list
         budgets.removeWhere((element) => element.id == budget.id);
       });
 
-      // Add the history entry with the title of the deleted investment
       String specificText = "Delete Budget: ${budget.category} with ${budget
           .amount}";
       await historyViewModel.addHistory(specificText, widget.username, context);
@@ -166,10 +204,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           .collection('expenses')
           .get();
 
-      // Initialize a map to store total expenses by category
       Map<String, double> categoryExpenses = {};
-
-      // Loop through each expense and accumulate expenses by category
       expenseSnapshot.docs.forEach((doc) {
         Expense expense = Expense.fromDocument(doc);
         if (categoryExpenses.containsKey(expense.category)) {
@@ -182,16 +217,95 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
 
       return categoryExpenses;
     } else {
-      // Return an empty map if no expenses found
       return {};
     }
   }
 
-  void handleBudgetNotificationsAdded(BudgetNotifications newBudgetNotifications) {
-    // Add your logic here to handle the addition of budget notifications
-    // For example, you can update the UI, save the notifications to a local database, etc.
+  void handleBudgetNotificationsAdded(
+      BudgetNotifications newBudgetNotifications) {
     print('New budget notifications added: $newBudgetNotifications');
   }
+
+  void _updateBudgetNotifications(
+      BudgetNotifications editedBudgetNotifications) {
+    setState(() {
+      int index = budgetNotificationsList.indexWhere((budgetNotifications) =>
+      budgetNotifications.id == editedBudgetNotifications.id);
+      if (index != -1) {
+        budgetNotificationsList[index] = editedBudgetNotifications;
+      }
+    });
+  }
+
+
+  Future<String> _getNotificationsDocumentId(
+      BudgetNotifications budgetNotifications) async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      QuerySnapshot budgetNotificationsSnapshot = await FirebaseFirestore
+          .instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budgetNotifications')
+          .where('budgetNotifications_id', isEqualTo: budgetNotifications.id)
+          .limit(1)
+          .get();
+
+      if (budgetNotificationsSnapshot.docs.isNotEmpty) {
+        return budgetNotificationsSnapshot.docs.first.id;
+      }
+    }
+    return '';
+  }
+
+  Future<void> _deleteBudgetNotifications(
+      BudgetNotifications budgetNotifications) async {
+    String username = widget.username;
+    String documentId = await _getNotificationsDocumentId(budgetNotifications);
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+      await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budgetNotifications')
+          .doc(documentId)
+          .delete();
+
+      setState(() {
+        budgetNotificationsList.removeWhere((element) =>
+        element.id == budgetNotifications.id);
+      });
+    }
+  }
+
+  void refreshData() async {
+    for (var budget in budgets) {
+      BudgetNotifications? notifications = await _fetchNotificationsForBudget(budget);
+      if (notifications != null) {
+        setState(() {
+          // Update the notifications for the given budget
+          categoryNotifications[budget.category] = true;
+        });
+      } else {
+        setState(() {
+          // Remove the notifications for the given budget if there are none
+          categoryNotifications.remove(budget.category);
+        });
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +313,14 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       appBar: AppBar(
         backgroundColor: Color(0xFF988E82),
         title: Text('View Budget'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              refreshData();
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -214,7 +336,6 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
         ),
         child: ListView(
           children: [
-
             FutureBuilder<List<Budget>>(
               future: _fetchBudget(),
               builder: (context, budgetSnapshot) {
@@ -238,16 +359,21 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                           children: [
                             Text(
                               'Budget Categories',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             IconButton(
-                              icon: Icon(Icons.edit_notifications_rounded),
+                              icon: Icon(Icons.notification_add_rounded),
                               onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                       BudgetNotificationsPage(username: widget.username, onBudgetNotificationsAdded: handleBudgetNotificationsAdded,),
+                                        BudgetNotificationsPage(
+                                          username: widget.username,
+                                          onBudgetNotificationsAdded:
+                                          handleBudgetNotificationsAdded,
+                                        ),
                                   ),
                                 );
                               },
@@ -261,8 +387,6 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 }
               },
             ),
-
-
             SizedBox(height: 16.0),
             // Expense Categories Section
             FutureBuilder<Map<String, double>>(
@@ -303,12 +427,13 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped:
+        NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }
 
-// Helper method to build the category list for expenses
+  // Helper method to build the category list for expenses
   Widget _buildCategoryList(Map<String, double> categories, String type) {
     return ListView.builder(
       shrinkWrap: true,
@@ -333,52 +458,148 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     );
   }
 
-// Helper method to build the list for budgets
   Widget _buildBudgetList(List<Budget> budgets) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: budgets.length,
-      itemBuilder: (context, index) {
-        final budget = budgets[index];
-        final isOdd = index % 2 == 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: budgets.length,
+          itemBuilder: (context, index) {
+            final budget = budgets[index];
+            final isOdd = index % 2 == 0;
+            final hasNotification = categoryNotifications[budget.category] ?? false;
 
-        return Container(
-          color: isOdd
-              ? Colors.grey[200]!.withOpacity(0.8)
-              : Colors.white!.withOpacity(0.8),
-          child: ListTile(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return GestureDetector(
+              onTap: () {
+                _handleBudgetCategoryTap(context, budget);
+              },
+              child: Container(
+                color: isOdd ? Colors.grey[200]!.withOpacity(0.8) : Colors.white!.withOpacity(0.8),
+                child: ListTile(
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(budget.category),
+                          if (hasNotification)
+                            Icon(
+                              Icons.notifications,
+                              color: Colors.red,
+                              size: 16.0,
+                            ),
+                        ],
+                      ),
+                      Text(
+                        '${budget.month}, ${budget.year}',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  subtitle: Text('Amount: RM${budget.amount.toStringAsFixed(2)}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () {
+                          _editBudget(budget);
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () async {
+                          _deleteBudget(budget);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        SizedBox(height: 16.0),
+        // Display text for categories with notifications but no budgets
+        if (categoriesWithNotificationsNoBudgets.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(budget.category),
                 Text(
-                  '${budget.month}, ${budget.year}',
-                  style: TextStyle(color: Colors.grey),
+                  'Categories with Notifications but No Budgets:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
                 ),
-              ],
-            ),
-            subtitle: Text('Amount: RM${budget.amount.toStringAsFixed(2)}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit),
-                  onPressed: () {
-                    _editBudget(budget);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () async {
-                    _deleteBudget(budget);
-                  },
-                ),
+                for (var category in categoriesWithNotificationsNoBudgets)
+                  Text(
+                    '- $category',
+                    style: TextStyle(fontSize: 16, color: Colors.red),
+                  ),
               ],
             ),
           ),
-        );
-      },
+      ],
     );
+  }
+
+  void _handleBudgetCategoryTap(BuildContext context, Budget budget) async {
+    BudgetNotifications? budgetNotifications = await _fetchNotificationsForBudget(budget);
+    if (budgetNotifications != null) {
+      String documentId = await _getNotificationsDocumentId(budgetNotifications);
+
+      // Show a dialog or navigate to another page to handle edit/delete options
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Budget Category Options'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: Text('Modify Notifications'),
+                  onTap: () {
+                    // Navigate to modify notifications page
+                    _navigateToModifyNotificationsPage(context, budgetNotifications, documentId);
+                  },
+                ),
+                ListTile(
+                  title: Text('Delete Notifications'),
+                  onTap: () {
+                    // Delete notifications logic here
+                    _deleteNotifications(budgetNotifications);
+                    Navigator.pop(context); // Close the dialog
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+
+  void _navigateToModifyNotificationsPage(BuildContext context, BudgetNotifications budgetNotifications, String documentId) {
+    // Navigate to modify notifications page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditBudgetNotifications(
+          onBudgetNotificationsUpdated: _updateBudgetNotifications,
+          username: widget.username,
+          budgetNotifications: budgetNotifications,
+          documentId: documentId,
+        ),
+      ),
+    );
+  }
+
+
+  void _deleteNotifications(BudgetNotifications budgetNotifications) {
+   _deleteBudgetNotifications(budgetNotifications);
   }
 }
