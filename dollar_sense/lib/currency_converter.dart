@@ -6,6 +6,10 @@ import 'package:http/http.dart' as http;
 import 'currency_converter_view_model.dart';
 import 'currency_converter_model.dart';
 
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 class CurrencyConverterPage extends StatefulWidget {
   final String username;
   final Function(Currency) onCurrencyAdded;
@@ -17,22 +21,57 @@ class CurrencyConverterPage extends StatefulWidget {
 }
 
 class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
-  final String currencyApiUrl =
-      'https://v6.exchangerate-api.com/v6/dc09aa4614dcaa1eec9bd34d/latest/MYR';
-
+  String baseCurrency = 'MYR';
+  late String currencyApiUrl;
   Map<String, dynamic>? currencyData;
   String selectedCurrency = 'USD';
   late TextEditingController amountController;
   late TextEditingController convertedAmountController;
-  final viewModel= CurrencyConverterViewModel();
-
+  final viewModel = CurrencyConverterViewModel();
 
   @override
   void initState() {
     super.initState();
-    fetchCurrencyData();
     amountController = TextEditingController();
     convertedAmountController = TextEditingController();
+    fetchBaseCurrency();
+  }
+
+  Future<void> fetchBaseCurrency() async {
+    try {
+      String username = widget.username;
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .where('username', isEqualTo: username)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        QuerySnapshot currencySnapshot = await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('currency')
+            .get();
+
+        if (currencySnapshot.docs.isNotEmpty) {
+          String baseCurrencyCode = currencySnapshot.docs.first['code'];
+          setState(() {
+            baseCurrency = baseCurrencyCode;
+            updateApiUrl(baseCurrency);
+            fetchCurrencyData();
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching base currency: $e');
+    }
+  }
+
+
+  void updateApiUrl(String currencyCode) {
+    setState(() {
+      currencyApiUrl = 'https://v6.exchangerate-api.com/v6/dc09aa4614dcaa1eec9bd34d/latest/$currencyCode';
+    });
   }
 
   Future<void> fetchCurrencyData() async {
@@ -64,8 +103,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               shrinkWrap: true,
               itemCount: currencyData!['conversion_rates'].length,
               itemBuilder: (context, index) {
-                String currency =
-                currencyData!['conversion_rates'].keys.elementAt(index);
+                String currency = currencyData!['conversion_rates'].keys.elementAt(index);
                 return ListTile(
                   title: Text(currency),
                   onTap: () {
@@ -97,17 +135,19 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               shrinkWrap: true,
               itemCount: currencyData!['conversion_rates'].length,
               itemBuilder: (context, index) {
-                String currency =
-                currencyData!['conversion_rates'].keys.elementAt(index);
-                double rate =
-                currencyData!['conversion_rates'][currency];
+                String currency = currencyData!['conversion_rates'].keys.elementAt(index);
+                double rate = currencyData!['conversion_rates'][currency];
                 return ListTile(
                   title: Text(currency),
                   onTap: () {
                     setState(() {
+                      baseCurrency = currency;
                       selectedCurrency = currency;
                       viewModel.codeController.text = currency;
                       viewModel.rateController.text = rate.toStringAsFixed(2);
+                      updateRatesForBaseCurrency(currency);
+                      updateApiUrl(currency);
+                      fetchCurrencyData();
                     });
                     Navigator.of(context).pop();
                   },
@@ -120,11 +160,23 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     );
   }
 
-  double convertAmount(double amount, String fromCurrency, String toCurrency,
-      Map<String, dynamic> rates) {
+  void updateRatesForBaseCurrency(String baseCurrency) {
+    if (currencyData != null) {
+      double baseRate = currencyData!['conversion_rates'][baseCurrency];
+      Map<String, double> updatedRates = {};
+      currencyData!['conversion_rates'].forEach((currency, rate) {
+        updatedRates[currency] = rate / baseRate;
+      });
+      setState(() {
+        currencyData!['conversion_rates'] = updatedRates;
+      });
+    }
+  }
+
+  double convertAmount(double amount, String fromCurrency, String toCurrency, Map<String, dynamic> rates) {
     double fromRate = rates[fromCurrency];
     double toRate = rates[toCurrency];
-    return amount * (1 / toRate); // Multiply amount by exchange rate
+    return amount * (toRate / fromRate);
   }
 
   @override
@@ -139,7 +191,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Current Currency: MYR (Malaysian Ringgit)',
+              'Current Currency: $baseCurrency',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
@@ -153,10 +205,8 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
                   ? ListView.builder(
                 itemCount: currencyData!['conversion_rates'].length,
                 itemBuilder: (context, index) {
-                  String currency =
-                  currencyData!['conversion_rates'].keys.elementAt(index);
-                  double rate =
-                  currencyData!['conversion_rates'][currency];
+                  String currency = currencyData!['conversion_rates'].keys.elementAt(index);
+                  double rate = currencyData!['conversion_rates'][currency];
                   return ListTile(
                     title: Text(currency),
                     trailing: Text(rate.toStringAsFixed(2)),
@@ -199,7 +249,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                   viewModel.addCurrency(widget.username, widget.onCurrencyAdded, context);
+                    viewModel.addCurrency(widget.username, widget.onCurrencyAdded, context);
                   },
                   child: Text('Save'),
                 ),

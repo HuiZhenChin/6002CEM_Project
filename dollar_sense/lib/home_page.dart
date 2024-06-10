@@ -571,19 +571,23 @@ class _MyAppState extends State<MyApp> {
             data.containsKey('year')) {
           String documentId = '${data['category']}_${data['month']}_${data['year']}';
 
-          if (data.containsKey('read_first_reminder') && data['read_first_reminder'] == false) {
+          if (data.containsKey('read_first_reminder') &&
+              data['read_first_reminder'] == false) {
             unreadFirstReminderCount++;
           }
 
-          if (data.containsKey('read_second_reminder') && data['read_second_reminder'] == false) {
+          if (data.containsKey('read_second_reminder') &&
+              data['read_second_reminder'] == false) {
             unreadSecondReminderCount++;
           }
         }
       }
 
       setState(() {
-        _hasUnreadNotifications = (unreadFirstReminderCount > 0 || unreadSecondReminderCount > 0);
-        unreadNotificationsCount= unreadFirstReminderCount + unreadSecondReminderCount;
+        _hasUnreadNotifications =
+        (unreadFirstReminderCount > 0 || unreadSecondReminderCount > 0);
+        unreadNotificationsCount =
+            unreadFirstReminderCount + unreadSecondReminderCount;
       });
     }
   }
@@ -597,99 +601,109 @@ class _MyAppState extends State<MyApp> {
 
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
-      QuerySnapshot currencySnapshot = await FirebaseFirestore.instance
+      CollectionReference currencyCollection = FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
-          .collection('currency')
-          .get();
+          .collection('currency');
+
+      QuerySnapshot currencySnapshot = await currencyCollection.get();
 
       if (currencySnapshot.docs.isNotEmpty) {
-        // Get the currency rate from the first document (assuming there's only one)
-        double currencyRate = currencySnapshot.docs.first['rate'];
+        DocumentReference currencyDocRef = currencySnapshot.docs.first
+            .reference;
+        DocumentSnapshot currencyDocSnapshot = await currencyDocRef.get();
 
-        // Check if the currency has already been converted
-        bool converted = currencySnapshot.docs.first['converted'] ?? false;
+        if (currencyDocSnapshot.exists) {
+          double currencyRate = currencyDocSnapshot['rate'];
+          bool converted = currencyDocSnapshot['converted'];
 
-        if (!converted) {
-          // Fetch and update budget amounts
-          QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
-              .collection('dollar_sense')
-              .doc(userId)
-              .collection('budget')
-              .get();
-          budgetSnapshot.docs.forEach((doc) {
-            double budgetAmount = doc['budget_amount'];
-            double convertedBudgetAmount = budgetAmount * currencyRate;
-            FirebaseFirestore.instance
-                .collection('dollar_sense')
-                .doc(userId)
-                .collection('budget')
-                .doc(doc.id)
-                .update({'budget_amount': convertedBudgetAmount});
-          });
+          if (!converted) {
+            // Update all collections with new currency rates
+            await _updateAllCollections(userId, currencyRate, currencyDocRef);
 
-          // Fetch and update invest amounts
-          QuerySnapshot investSnapshot = await FirebaseFirestore.instance
-              .collection('dollar_sense')
-              .doc(userId)
-              .collection('invest')
-              .get();
-          investSnapshot.docs.forEach((doc) {
-            double investAmount = doc['invest_amount'];
-            double convertedInvestAmount = investAmount * currencyRate;
-            FirebaseFirestore.instance
-                .collection('dollar_sense')
-                .doc(userId)
-                .collection('invest')
-                .doc(doc.id)
-                .update({'invest_amount': convertedInvestAmount});
-          });
+            // Set the currency document's 'converted' field to true
+            await currencyDocRef.update({'converted': true});
 
-          // Fetch and update expense amounts
-          QuerySnapshot expenseSnapshot = await FirebaseFirestore.instance
-              .collection('dollar_sense')
-              .doc(userId)
-              .collection('expenses')
-              .get();
-          expenseSnapshot.docs.forEach((doc) {
-            double expenseAmount = doc['amount'];
-            double convertedExpenseAmount = expenseAmount * currencyRate;
-            FirebaseFirestore.instance
-                .collection('dollar_sense')
-                .doc(userId)
-                .collection('expenses')
-                .doc(doc.id)
-                .update({'amount': convertedExpenseAmount});
-          });
-
-          // Fetch and update notifications amounts
-          QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
-              .collection('dollar_sense')
-              .doc(userId)
-              .collection('notifications')
-              .get();
-          notificationsSnapshot.docs.forEach((doc) {
-            double budget = doc['budget_amount'];
-            double expense = doc['expense_amount'];
-            double convertedBudget = budget * currencyRate;
-            double convertedExpense = expense * currencyRate;
-            FirebaseFirestore.instance
-                .collection('dollar_sense')
-                .doc(userId)
-                .collection('notifications')
-                .doc(doc.id)
-                .update({'budget_amount': convertedBudget, 'expense_amount': convertedExpense});
-          });
-
-          // Update currency collection to mark as converted
-          FirebaseFirestore.instance
-              .collection('dollar_sense')
-              .doc(userId)
-              .collection('currency')
-              .doc(currencySnapshot.docs.first.id)
-              .update({'converted': true});
+            // Refresh total budget and income after currency conversion
+            await _fetchTotalBudget(); // Assuming _fetchTotalBudget fetches and sets the total budget
+            await _fetchIncome(); // Assuming _fetchIncome fetches and sets the income
+          }
         }
       }
+    }
+  }
+
+
+  Future<void> _updateAllCollections(String userId, double currencyRate,
+      DocumentReference currencyDocRef) async {
+    QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .doc(userId)
+        .collection('budget')
+        .get();
+
+    for (var doc in budgetSnapshot.docs) {
+      double budgetAmount = doc['budget_amount'];
+      double convertedBudgetAmount = budgetAmount * currencyRate;
+      await doc.reference.update({'budget_amount': convertedBudgetAmount});
+    }
+
+    QuerySnapshot investSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .doc(userId)
+        .collection('invest')
+        .get();
+
+    for (var doc in investSnapshot.docs) {
+      double investAmount = doc['invest_amount'];
+      double convertedInvestAmount = investAmount * currencyRate;
+      await doc.reference.update({'invest_amount': convertedInvestAmount});
+    }
+
+    QuerySnapshot expenseSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .doc(userId)
+        .collection('expenses')
+        .get();
+
+    for (var doc in expenseSnapshot.docs) {
+      double expenseAmount = doc['amount'];
+      double convertedExpenseAmount = expenseAmount * currencyRate;
+      await doc.reference.update({'amount': convertedExpenseAmount});
+    }
+
+    QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .doc(userId)
+        .collection('notifications')
+        .get();
+
+    for (var doc in notificationsSnapshot.docs) {
+      double budget = doc['budget_amount'];
+      double expense = doc['expense_amount'];
+      double convertedBudget = budget * currencyRate;
+      double convertedExpense = expense * currencyRate;
+      await doc.reference.update({
+        'budget_amount': convertedBudget,
+        'expense_amount': convertedExpense
+      });
+    }
+
+    // Fetch user document to update income
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .doc(userId)
+        .get();
+
+    if (userSnapshot.exists) {
+      double income = (userSnapshot.data() as Map<String, dynamic>?)?['income'] as double? ?? 0.0;
+      double convertedIncome = income * currencyRate;
+      await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .update({
+        'income': convertedIncome
+      }); // Update income directly in the user document
     }
   }
 

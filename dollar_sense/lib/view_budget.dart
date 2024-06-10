@@ -28,14 +28,19 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
   int _bottomNavIndex = 0;
   List<Budget> budgets = [];
   Map<String, bool> categoryNotifications = {};
-  List<String> categoriesWithNotificationsNoBudgets = [];
+
   final viewModel = BudgetViewModel();
   final historyViewModel = TransactionHistoryViewModel();
   List<BudgetNotifications> budgetNotificationsList = [];
+  List<String> categoriesWithNotificationsButNoBudget = [];
 
   @override
   void initState() {
     super.initState();
+
+    categoriesWithNotificationsButNoBudget = [];
+
+    // Fetch and initialize budget and notifications data
     _fetchBudget().then((fetchedBudgets) async {
       setState(() {
         budgets = fetchedBudgets;
@@ -51,17 +56,17 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       }
 
       // Populate categoryNotifications map
-      for (var notification in budgetNotificationsList) {
-        categoryNotifications[notification.category] = true;
-      }
-
-      // Populate categoriesWithNotificationsNoBudgets
-      for (var notification in budgetNotificationsList) {
-        if (!budgets.any((budget) => budget.category == notification.category)) {
-          categoriesWithNotificationsNoBudgets.add(notification.category);
+      setState(() {
+        for (var notification in budgetNotificationsList) {
+          categoryNotifications[notification.category] = true;
         }
-      }
+      });
 
+      // Fetch categories with notifications but no budget
+      var categoriesWithoutBudget = await _fetchCategoriesWithNotificationsButNoBudget();
+      setState(() {
+        categoriesWithNotificationsButNoBudget = categoriesWithoutBudget;
+      });
     });
   }
 
@@ -314,6 +319,48 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     }
   }
 
+  Future<List<String>> _fetchCategoriesWithNotificationsButNoBudget() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+
+      // Fetch budget categories
+      QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budget')
+          .get();
+
+      Set<String> budgetCategories = budgetSnapshot.docs
+          .map((doc) => doc['budget_category'] as String)
+          .toSet();
+
+      // Fetch budget notification categories
+      QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('budgetNotifications')
+          .get();
+
+      Set<String> notificationCategories = notificationsSnapshot.docs
+          .where((doc) => doc['budgetNotifications_category'] != null)
+          .map((doc) => doc['budgetNotifications_category'] as String)
+          .toSet();
+
+      // Categories that have notifications but no budget
+      notificationCategories.removeAll(budgetCategories);
+
+      return notificationCategories.toList();
+    } else {
+      return [];
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -428,6 +475,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 }
               },
             ),
+
           ],
         ),
       ),
@@ -529,26 +577,14 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           },
         ),
         SizedBox(height: 16.0),
-        // Display text for categories with notifications but no budgets
-        if (categoriesWithNotificationsNoBudgets.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Categories with Notifications but No Budgets:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
-                ),
-                for (var category in categoriesWithNotificationsNoBudgets)
-                  Text(
-                    '- $category',
-                    style: TextStyle(fontSize: 16, color: Colors.red),
-                  ),
-              ],
-            ),
+        // Categories with notifications but no budget
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Categories with notifications but no budget: ${categoriesWithNotificationsButNoBudget.join(', ')}',
+            style: TextStyle(fontSize: 16, color: Colors.red),
           ),
-
+        ),
       ],
     );
   }

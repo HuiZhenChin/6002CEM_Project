@@ -192,7 +192,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                       } else {
                         // Update text fields for Custom reminder type
                         reminderTypeController.text = "Custom";
-                        firstReminderController.text = "";
+                        firstReminderController.text = '';
                         secondReminderController.text = '';
                       }
                     });
@@ -242,6 +242,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
       },
     );
   }
+
 
 
   void _showSecondReminderDialog() async {
@@ -341,24 +342,25 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                                   onTap: () => _showReminderTypeDialog(),
                                   validator: (value) => _validateField(value, 'Reminder Type'),
                                 ),
-                                SizedBox(height: 10),
                                 CustomInputField(
                                   controller: firstReminderController,
                                   labelText: '1st Reminder (% remaining)',
                                   inputFormatters: [],
-                                  onTap: _selectedReminderType == 'Basic' ? null : _showFirstReminderDialog,
+                                  onTap: _showFirstReminderDialog,
                                   readOnly: _selectedReminderType == 'Basic',
                                   validator: (value) => _validateField(value, '1st Reminder'),
                                 ),
+
                                 SizedBox(height: 10),
                                 CustomInputField(
                                   controller: secondReminderController,
                                   labelText: '2nd Reminder',
                                   inputFormatters: [],
-                                  onTap: _selectedReminderType == 'Basic' ? null : _showSecondReminderDialog,
+                                  onTap: _selectedReminderType == 'Basic' ? null : () => _showSecondReminderDialog(),
                                   readOnly: _selectedReminderType == 'Basic',
                                   validator: (value) => _validateField(value, '2nd Reminder'),
                                 ),
+
                                 SizedBox(height: 20),
                               ],
                             );

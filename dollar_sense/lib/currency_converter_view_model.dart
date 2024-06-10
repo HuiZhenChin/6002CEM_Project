@@ -5,30 +5,26 @@ import 'currency_converter_model.dart';
 class CurrencyConverterViewModel {
   final TextEditingController codeController = TextEditingController();
   final TextEditingController rateController= TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> addCurrency(String username, Function(Currency) onCurrencyAdded,  BuildContext context) async {
+  Future<void> addCurrency(String username, Function(Currency) onCurrencyAdded, BuildContext context) async {
     String code = codeController.text;
     double rate = double.tryParse(rateController.text) ?? 0.0;
-    bool converted= false;
+    bool converted = false;
 
-        Currency newCurrency = Currency(
-            code: code,
-            rate: rate,
-            converted: converted,
-        );
+    Currency newCurrency = Currency(
+      code: code,
+      rate: rate,
+      converted: converted,
+    );
 
-        onCurrencyAdded(newCurrency);
-        await _saveCurrencyToFirestore(newCurrency, username, context);
-        codeController.clear();
-        rateController.clear();
-      }
+    onCurrencyAdded(newCurrency);
+    await _saveCurrencyToFirestore(newCurrency, username, context);
+    codeController.clear();
+    rateController.clear();
+  }
 
-
-  Future<void> _saveCurrencyToFirestore(Currency currency, String username,
-      BuildContext context) async {
-    // Query Firestore to get the user ID from the username
-    QuerySnapshot userSnapshot = await _firestore
+  Future<void> _saveCurrencyToFirestore(Currency currency, String username, BuildContext context) async {
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
         .collection('dollar_sense')
         .where('username', isEqualTo: username)
         .get();
@@ -40,15 +36,27 @@ class CurrencyConverterViewModel {
           .doc(userId)
           .collection('currency');
 
-      Map<String, dynamic> currencyData = {
-        'code': currency.code,
-        'rate': currency.rate,
-        'converted': currency.converted,
-      };
+      QuerySnapshot currencySnapshot = await currencyCollection.get();
 
-      await currencyCollection.add(currencyData);
+      if (currencySnapshot.docs.isNotEmpty) {
+        String currencyDocId = currencySnapshot.docs.first.id;
+        await currencyCollection.doc(currencyDocId).update({
+          'code': currency.code,
+          'rate': currency.rate,
+          'converted': currency.converted,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await currencyCollection.add({
+          'code': currency.code,
+          'rate': currency.rate,
+          'converted': currency.converted,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Currency successfully modified!')),
+        SnackBar(content: Text('Currency successfully updated!')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,4 +64,5 @@ class CurrencyConverterViewModel {
       );
     }
   }
+
 }
