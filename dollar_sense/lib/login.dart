@@ -1,4 +1,7 @@
+import 'dart:core';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dollar_sense/reset_password.dart';
 import 'home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -96,32 +99,18 @@ class _LoginFormState extends State<LoginForm> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       try {
-        QuerySnapshot querySnapshot = await _firestore
-            .collection('dollar_sense')
-            .where('email', isEqualTo: _email)
-            .get();
-
-        if (querySnapshot.docs.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Account does not exist.'),
-            backgroundColor: Colors.red,
-          ));
-          return;
-        }
-
-        String passwordFromFirestore = querySnapshot.docs.first.get('password');
-
-        if (passwordFromFirestore != _password) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Incorrect password.'),
-            backgroundColor: Colors.red,
-          ));
-          return;
-        }
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _email,
+          password: _password,
+        );
 
         // Fetch the username
-        String username = querySnapshot.docs.first.get('username');
-        String email = querySnapshot.docs.first.get('email');
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(FirebaseAuth.instance.currentUser?.uid)
+            .get();
+
+        String username = userSnapshot.get('username');
 
         // Proceed with login and pass the username to MyApp
         Navigator.pushReplacement(
@@ -179,6 +168,31 @@ class _LoginFormState extends State<LoginForm> {
             onSaved: (value) {
               _password = value!;
             },
+          ),
+          SizedBox(height: 16),
+          SizedBox(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  minimumSize: Size(50, 30),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ResetPasswordPage()),
+                  );
+                },
+                child: Text(
+                  'FORGET PASSWORD',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ),
           SizedBox(height: 35),
           SizedBox(

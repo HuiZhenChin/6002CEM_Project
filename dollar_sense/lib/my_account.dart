@@ -10,7 +10,6 @@ import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
 class MyAccount extends StatefulWidget {
-
   final String username;
 
   MyAccount({required this.username});
@@ -20,40 +19,41 @@ class MyAccount extends StatefulWidget {
 }
 
 class _MyAccountState extends State<MyAccount> {
+  final TextEditingController _emailController = TextEditingController();
+  String _fetchedEmail = ''; // Initialize with an empty string
   File? _image;
   String _username = '';
   String _email = '';
-  final navigationBarViewModel= NavigationBarViewModel();
+  final navigationBarViewModel = NavigationBarViewModel();
   int _bottomNavIndex = 3;
 
   @override
   void initState() {
     super.initState();
-    _getUserData();
+    _fetchEmail();
   }
 
-  Future<void> _getUserData() async {
-    try {
-      // Get the current user ID
-      String userId = FirebaseAuth.instance.currentUser!.uid;
+  Future<void> _fetchEmail() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
 
-      // Retrieve user data from Firestore using user ID
-      DocumentSnapshot userData = await FirebaseFirestore.instance
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
           .get();
 
-      // Update state with user data
-      setState(() {
-        _username = userData.get('username') ?? '';
-        _email = userData.get('email') ?? '';
-      });
-
-      // Debugging: Print retrieved username and email
-      print('Retrieved username: $_username');
-      print('Retrieved email: $_email');
-    } catch (e) {
-      print('Error fetching user data: $e');
+      if (userDoc.exists) {
+        String email = userDoc['email'] ?? '';
+        setState(() {
+          _fetchedEmail = email;
+        });
+      }
     }
   }
 
@@ -67,7 +67,6 @@ class _MyAccountState extends State<MyAccount> {
       });
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +119,10 @@ class _MyAccountState extends State<MyAccount> {
               ),
               SizedBox(height: 8),
               Text(
-                'Email: ', // Display retrieved email
+                'Email: $_fetchedEmail',
                 style: TextStyle(
                   fontSize: 18,
+                  fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
@@ -136,7 +136,9 @@ class _MyAccountState extends State<MyAccount> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => EditAccount(username: widget.username)),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EditAccount(username: widget.username)),
                   );
                 },
                 child: Text('Edit Account'),
@@ -156,7 +158,6 @@ class _MyAccountState extends State<MyAccount> {
                 },
                 child: Text('Log Out'),
               ),
-
             ],
           ),
         ),
@@ -165,7 +166,8 @@ class _MyAccountState extends State<MyAccount> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped:
+        NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }

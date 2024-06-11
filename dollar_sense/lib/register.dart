@@ -63,15 +63,24 @@ class _RegisterFormState extends State<RegisterForm> {
   Future<void> _register(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+
+      if (_password.length < 6) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Password should be at least 6 characters long.'),
+          backgroundColor: Colors.red,
+        ));
+        return; // Exit the method if password is too short
+      }
+
       try {
         // Check if the email already exists in Firestore
-        QuerySnapshot querySnapshot = await _firestore
+        QuerySnapshot emailQuerySnapshot = await _firestore
             .collection('dollar_sense')
             .where('email', isEqualTo: _email)
             .get();
 
         // If the query returns any documents, it means the email already exists
-        if (querySnapshot.docs.isNotEmpty) {
+        if (emailQuerySnapshot.docs.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('An account with this email already exists.'),
             backgroundColor: Colors.red,
@@ -79,8 +88,22 @@ class _RegisterFormState extends State<RegisterForm> {
           return; // Exit the method if email already exists
         }
 
-        // Proceed with registration if email doesn't exist
+        // Check if the username already exists in Firestore
+        QuerySnapshot usernameQuerySnapshot = await _firestore
+            .collection('dollar_sense')
+            .where('username', isEqualTo: _username)
+            .get();
 
+        // If the query returns any documents, it means the username already exists
+        if (usernameQuerySnapshot.docs.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Username already exists.'),
+            backgroundColor: Colors.red,
+          ));
+          return; // Exit the method if username already exists
+        }
+
+        // Proceed with registration if email and username don't exist
         UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: _email,
           password: _password,
@@ -141,6 +164,9 @@ class _RegisterFormState extends State<RegisterForm> {
               if (value == null || value.isEmpty) {
                 return 'Please enter a password';
               }
+              if (value.length < 6) {
+                return 'Password should be at least 6 characters long';
+              }
               return null;
             },
             onSaved: (value) {
@@ -152,7 +178,7 @@ class _RegisterFormState extends State<RegisterForm> {
             decoration: InputDecoration(labelText: 'Username'),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter an username';
+                return 'Please enter a username';
               }
               return null;
             },

@@ -1,3 +1,4 @@
+import 'package:dollar_sense/calendar.dart';
 import 'package:dollar_sense/notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,9 +16,14 @@ class NavigationBarViewModel {
             builder: (context) => MyApp(username: username),
           ),
         );
-        
-      } else if (index == 1) {
 
+      } else if (index == 1) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Calendar(),
+          ),
+        );
       }else if (index == 3) {
         Navigator.push(
           context,
