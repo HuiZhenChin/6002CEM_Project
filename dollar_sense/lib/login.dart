@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dollar_sense/main.dart';
+import 'home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:dollar_sense/my_account.dart';
-import 'package:dollar_sense/app_main_page.dart';
 
 class LoginPage extends StatelessWidget {
   @override
@@ -98,37 +96,39 @@ class _LoginFormState extends State<LoginForm> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       try {
-        // Check if the email already exists in Firestore
         QuerySnapshot querySnapshot = await _firestore
             .collection('dollar_sense')
             .where('email', isEqualTo: _email)
             .get();
 
-        // If the query returns no documents, it means the email does not exist
         if (querySnapshot.docs.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Account does not exist.'),
             backgroundColor: Colors.red,
           ));
-          return; // Exit the method if email does not exist
+          return;
         }
 
-        // Get the password from Firestore for the given email
         String passwordFromFirestore = querySnapshot.docs.first.get('password');
 
-        // Compare the password entered by the user with the password from Firestore
         if (passwordFromFirestore != _password) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Incorrect password.'),
             backgroundColor: Colors.red,
           ));
-          return; // Exit the method if password is incorrect
+          return;
         }
 
-        // Proceed with login if email and password match
+        // Fetch the username
+        String username = querySnapshot.docs.first.get('username');
+        String email = querySnapshot.docs.first.get('email');
+
+        // Proceed with login and pass the username to MyApp
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MyApp()),
+          MaterialPageRoute(
+            builder: (context) => MyApp(username: username),
+          ),
         );
       } catch (e) {
         print(e);

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1092645709341",
+    "project_id": "dollarsense-c1f43",
+    "storage_bucket": "dollarsense-c1f43.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092645709341:android:899bf97d577cd909ad08f4",
+        "android_client_info": {
+          "package_name": "com.example.dollar_sense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDi5bSQewZitC4aTXrsvag9BBoh8CjZe5U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

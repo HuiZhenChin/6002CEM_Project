@@ -17,20 +17,22 @@ class CustomNavigationBar {
       leftCornerRadius: 32,
       rightCornerRadius: 32,
       tabBuilder: (int index, bool isActive) {
-        final color = isActive ? Color(0xFFE8D6CA): Color(0xFF544C47);
+        final color = isActive ? Color(0xFFD8EDF7): Color(0xFF85A5C3);
         IconData iconData;
         switch (index) {
           case 0:
             iconData = Icons.home;
             break;
           case 1:
-            iconData = Icons.notifications;
+            iconData = Icons.calendar_month_rounded;
             break;
           case 2:
             iconData = Icons.insert_chart_rounded;
+
             break;
           case 3:
             iconData = Icons.person;
+
             break;
           default:
             iconData = Icons.error;

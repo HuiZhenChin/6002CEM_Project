@@ -65,4 +65,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'dollarsense-c1f43.appspot.com',
     iosBundleId: 'com.example.dollarSense',
   );
+
 }
