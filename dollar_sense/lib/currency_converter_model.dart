@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//currency class
 class Currency {
   String code;
   double rate;

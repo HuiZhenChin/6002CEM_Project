@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//invest class
 class Invest {
   final String id;
   String title;
@@ -15,6 +16,7 @@ class Invest {
 
   });
 
+  //map the Firestore document fields to Invest attributes
   factory Invest.fromDocument(DocumentSnapshot doc) {
     return Invest(
       id: doc['id'],
@@ -25,6 +27,7 @@ class Invest {
     );
   }
 
+  //map changes
   Map<String, dynamic> toMap() {
     return {
       'id': id,

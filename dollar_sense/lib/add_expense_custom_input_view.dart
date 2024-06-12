@@ -1,7 +1,7 @@
-// custom_input_field.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+//customized text input field
 class CustomInputField extends StatelessWidget {
   final String labelText;
   final TextEditingController controller;

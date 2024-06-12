@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to edit investments
 class EditInvest extends StatefulWidget {
   final Function(Invest) onInvestUpdated;
   final String username;
@@ -25,7 +25,7 @@ class EditInvest extends StatefulWidget {
 class _EditInvestState extends State<EditInvest> {
   int currentIndex = 0;
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0;  //navigation bar position index
   final _formKey = GlobalKey<FormState>();
   bool _isEditing = false;
   bool _isSaving = false;
@@ -52,18 +52,13 @@ class _EditInvestState extends State<EditInvest> {
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
-
-  }
-
-
+  //save changes for investments
   void _saveInvest() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSaving = true;
       });
 
-      // Construct the updated expense object
       Invest updatedInvest = Invest(
         id: widget.invest.id,
         title: titleController.text,
@@ -72,7 +67,6 @@ class _EditInvestState extends State<EditInvest> {
       );
 
       try {
-        // Get a reference to the document in Firestore
         String username = widget.username;
         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
@@ -90,7 +84,7 @@ class _EditInvestState extends State<EditInvest> {
               .update(updatedInvest.toMap());
         }
 
-        // Show a snackbar to indicate success
+        //success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Invest updated'),
@@ -99,16 +93,16 @@ class _EditInvestState extends State<EditInvest> {
 
         widget.onInvestUpdated(updatedInvest);
 
-        // Update UI state
+        //update UI state
         setState(() {
           _isEditing = false;
           _isSaving = false;
         });
       } catch (error) {
-        // Handle any errors that occur during the update process
+        //error handling
         print('Error updating invest: $error');
 
-        // Show a snackbar to indicate failure
+        //failure
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update invest'),
@@ -116,7 +110,7 @@ class _EditInvestState extends State<EditInvest> {
           ),
         );
 
-        // Reset UI state
+        //reset UI state
         setState(() {
           _isSaving = false;
         });
@@ -125,12 +119,12 @@ class _EditInvestState extends State<EditInvest> {
   }
 
   void _cancelEdit() {
-    // Reset controllers to original values
+    //reset controllers to original values
     titleController.text = widget.invest.title;
     amountController.text = widget.invest.amount.toString();
     dateController.text = widget.invest.date;
 
-    // Update UI state
+    //update UI state
     setState(() {
       _isEditing = false;
     });
@@ -161,7 +155,6 @@ class _EditInvestState extends State<EditInvest> {
             key: _formKey,
             child: ListView(
               children: [
-                // Text fields for editing invest data
                 SizedBox(height: 10),
                 // Title input
                 CustomInputField(
@@ -195,13 +188,13 @@ class _EditInvestState extends State<EditInvest> {
                           data: ThemeData.light().copyWith(
                             dialogBackgroundColor: Colors.white,
                             colorScheme: ColorScheme.light(
-                              primary: Colors.blue.shade900, // Header background color
-                              onPrimary: Colors.white, // Header text color
-                              onSurface: Colors.blue.shade900, // Body text color
+                              primary: Colors.blue.shade900,
+                              onPrimary: Colors.white,
+                              onSurface: Colors.blue.shade900,
                             ),
                             textButtonTheme: TextButtonThemeData(
                               style: TextButton.styleFrom(
-                                foregroundColor: Colors.blue.shade900, // Button text color
+                                foregroundColor: Colors.blue.shade900,
                               ),
                             ),
                           ),
@@ -216,7 +209,7 @@ class _EditInvestState extends State<EditInvest> {
                   },
                 ),
                 SizedBox(height: 20),
-                // Cancel and Add
+                // Cancel and Add buttons
                 Row(
                   children: [
                     Expanded(
@@ -229,7 +222,7 @@ class _EditInvestState extends State<EditInvest> {
                           ),
                           child: ElevatedButton(
                             onPressed: () {
-                              _cancelEdit();
+                              _cancelEdit(); //cancel editing
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
@@ -257,7 +250,7 @@ class _EditInvestState extends State<EditInvest> {
                           ),
                           child: ElevatedButton(
                             onPressed: () {
-                              _saveInvest();
+                              _saveInvest(); //save changes
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
@@ -281,6 +274,7 @@ class _EditInvestState extends State<EditInvest> {
           ),
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

@@ -25,17 +25,16 @@ import 'currency_converter.dart';
 import 'currency_converter_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class MyApp extends StatefulWidget {
+class HomePage extends StatefulWidget {
   final String username;
-  MyApp({required this.username});
+  HomePage({required this.username});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyAppState extends State<MyApp> {
-  final navigationBarViewModel = NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+class _HomePageState extends State<HomePage> {
+  int _bottomNavIndex = 0;  //navigation bar position index
   List<Expense> expenses = [];
   List<Invest> invests = [];
   List<Budget> budgets = [];
@@ -45,9 +44,9 @@ class _MyAppState extends State<MyApp> {
   double _totalInvest = 0.0;
   double _totalBudget = 0.0;
   double _currentNetWorth = 0.0;
-  bool _hasUnreadNotifications = false;
+  bool _hasUnreadNotifications = false;   //unread notifications count
   int unreadNotificationsCount = 0;
-  String baseCurrency = 'MYR';
+  String baseCurrency = 'MYR';  //base currency
 
   double get totalExpenses => _totalExpenses;
 
@@ -119,24 +118,20 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _fetchDataForCurrentMonth();
-    //_fetchTotalExpenses();
-    //_fetchIncome();
-    //_fetchTotalInvest();
-    //_fetchTotalBudget();
-    //_fetchCurrentNetWorth();
-    _fetchAndStoreData();
-    _retrieveRemainingAmountAndScheduleNotifications();
-    fetchNotifications(widget.username);
-    fetchBaseCurrency();
+    _fetchDataForCurrentMonth();   //fetch the current month data to display in the Home Page
+    _fetchAndStoreData(); //fetch the budget data to see the need of budget notification scheduling
+    _retrieveRemainingAmountAndScheduleNotifications();  //push notifications for budget reminders
+    fetchNotifications(widget.username);  //fetch notifications
+    fetchBaseCurrency();  //fetch the current base currency
   }
 
+  //fetch the current month data to display in the Home Page
   Future<void> _fetchDataForCurrentMonth() async {
     String username = widget.username;
     String currentMonthNumber = DateFormat('MM').format(DateTime.now());
     String currentYear = DateFormat('yyyy').format(DateTime.now());
 
-    // Month name to number mapping
+    //month name to number mapping
     Map<String, String> monthMapping = {
       'january': '01',
       'february': '02',
@@ -161,7 +156,7 @@ class _MyAppState extends State<MyApp> {
       if (userSnapshot.docs.isNotEmpty) {
         String userId = userSnapshot.docs.first.id;
 
-        // Fetch invest
+        //fetch invest
         QuerySnapshot investSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
             .doc(userId)
@@ -180,7 +175,7 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Fetch budget
+        //fetch budget
         QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
             .doc(userId)
@@ -198,7 +193,7 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Fetch expenses
+        //fetch expenses
         QuerySnapshot expensesSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
             .doc(userId)
@@ -217,7 +212,7 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Fetch income
+        //fetch income
         double totalIncome = 0.0;
         QuerySnapshot incomeSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
@@ -229,6 +224,7 @@ class _MyAppState extends State<MyApp> {
           totalIncome += doc['income'] as double;
         }
 
+        //update the variable with the current amount based on month and year
         setState(() {
           _totalBudget = totalBudget;
           _totalExpenses = totalExpenses;
@@ -237,7 +233,7 @@ class _MyAppState extends State<MyApp> {
           _currentNetWorth = totalIncome - totalExpenses - totalInvest;
         });
 
-        // Store the fetched data in a new collection for the current month
+        //store the fetched data in a new collection for the current month
         await FirebaseFirestore.instance
             .collection('dollar_sense')
             .doc(userId)
@@ -359,33 +355,15 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _fetchCurrentNetWorth() async {
-    // Fetch income, expenses, and budget
-    await _fetchIncome();
-    await _fetchTotalExpenses();
-    await _fetchTotalInvest();
-
-    // Calculate net worth
-    double netWorth = income - totalExpenses - totalInvest;
-
-    // Set the calculated net worth to the _currentNetWorth variable
-    setState(() {
-      _currentNetWorth = netWorth;
-    });
-  }
-
+  //refresh data for latest amounts
   Future<void> _refreshData() async {
-    //await _fetchTotalExpenses();
-    //await _fetchIncome();
-    //await _fetchTotalInvest();
-    //await _fetchTotalBudget();
-    //await _fetchCurrentNetWorth();
     await _fetchDataForCurrentMonth();
     await _fetchAndStoreData();
     await _retrieveRemainingAmountAndScheduleNotifications();
     await fetchNotifications(widget.username);
   }
 
+  //fetch budget and budget notifications data for notifications scheduling
   Future<void> _fetchAndStoreData() async {
     try {
       String username = widget.username;
@@ -397,7 +375,7 @@ class _MyAppState extends State<MyApp> {
       if (userSnapshot.docs.isNotEmpty) {
         String userId = userSnapshot.docs.first.id;
 
-        // Month name to number mapping
+        //month name to number mapping
         Map<String, String> monthMapping = {
           'january': '01',
           'february': '02',
@@ -413,7 +391,7 @@ class _MyAppState extends State<MyApp> {
           'december': '12'
         };
 
-        // Fetch and store budget
+        //fetch and store budget
         QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
             .doc(userId)
@@ -434,7 +412,7 @@ class _MyAppState extends State<MyApp> {
           budgetMap[budgetCategory] = budgetAmount;
           budgetCategories.add(budgetCategory);
 
-          // Store budget amount in notifications collection
+          //store budget amount in notifications collection in the database
           await FirebaseFirestore.instance
               .collection('dollar_sense')
               .doc(userId)
@@ -448,11 +426,11 @@ class _MyAppState extends State<MyApp> {
           }, SetOptions(merge: true));
         }
 
-        // Fetch and accumulate expenses by category
+        //fetch and accumulate expenses by category
         Map<String, Map<String, double>> categoryExpenses =
         await _fetchExpenseCategories(userId);
 
-        // Store expenses in notifications collection if there's a corresponding budget category
+        //store expenses in notifications collection if there's a corresponding budget category
         for (var entry in categoryExpenses.entries) {
           String expenseCategory = entry.key;
           Map<String, double> monthlyExpenses = entry.value;
@@ -474,7 +452,7 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Fetch and store budget notifications
+        //fetch and store budget notifications
         QuerySnapshot budgetNotificationsSnapshot = await FirebaseFirestore
             .instance
             .collection('dollar_sense')
@@ -490,7 +468,7 @@ class _MyAppState extends State<MyApp> {
           String secondReminder = doc['budgetNotifications_second_reminder'];
           String documentId = '${category}_$currentMonthYear';
 
-          // Check if the category exists in the budget categories set
+          //check if the category exists in the budget categories set
           if (budgetCategories.contains(category)) {
             await FirebaseFirestore.instance
                 .collection('dollar_sense')
@@ -509,6 +487,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  //fetch the expenses categories to match the expenses spent with the budget planned
   Future<Map<String, Map<String, double>>> _fetchExpenseCategories(
       String userId) async {
     try {
@@ -545,6 +524,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  //retrieve the remaining amount left and need of notifications scheduling
   Future<void> _retrieveRemainingAmountAndScheduleNotifications() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -565,10 +545,10 @@ class _MyAppState extends State<MyApp> {
       int secondUnreadReminderCount = 0;
 
       for (var doc in notificationsSnapshot.docs) {
-        // Get the document data as a map
+        //get the document data as a map
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        // Check if the map contains all the required keys
+        //check if the map contains all the required keys, if yes schedule for notifications
         if (data.containsKey('budget_amount') &&
             data.containsKey('expense_amount') &&
             data.containsKey('budgetNotifications_first_reminder') &&
@@ -583,11 +563,11 @@ class _MyAppState extends State<MyApp> {
           bool readFirstReminder = data['read_first_reminder'] ?? false;
           bool readSecondReminder = data['read_second_reminder'] ?? false;
 
-          // Calculate the remaining amount and the percentage of the budget that has been used
+          //calculate the remaining amount and the percentage of the budget that has been used
           double remainingAmount = budgetAmount - expenseAmount;
           double usedBudgetPercentage = (expenseAmount / budgetAmount) * 100;
 
-          // Update the document with the remaining budget
+          //update the document with the remaining budget
           String documentId = '${category}_${month}_${year}';
           await FirebaseFirestore.instance
               .collection('dollar_sense')
@@ -596,13 +576,13 @@ class _MyAppState extends State<MyApp> {
               .doc(documentId)
               .update({'remaining_budget': remainingAmount});
 
-          // Schedule notifications based on remaining amount and reminders
+          //schedule notifications based on remaining amount and reminders
           if (!readFirstReminder &&
               usedBudgetPercentage >= double.parse(firstReminder)) {
-            // Add first reminder message
+            //add first reminder message
             reminderMessages.add(
                 'First Reminder: You have used $usedBudgetPercentage% of your budget, which is more than $firstReminder%.');
-            firstUnreadReminderCount++; // Increment unread reminder count
+            firstUnreadReminderCount++; //increment unread reminder count for UI purpose
             await FirebaseFirestore.instance
                 .collection('dollar_sense')
                 .doc(userId)
@@ -611,10 +591,10 @@ class _MyAppState extends State<MyApp> {
                 .update({'read_first_reminder': false});
           }
           if (!readSecondReminder && expenseAmount > budgetAmount) {
-            // Add second reminder message
+            //add second reminder message
             reminderMessages
                 .add('Second Reminder: You have exceeded your budget.');
-            secondUnreadReminderCount++; // Increment unread reminder count
+            secondUnreadReminderCount++; //increment unread reminder count
             await FirebaseFirestore.instance
                 .collection('dollar_sense')
                 .doc(userId)
@@ -627,7 +607,7 @@ class _MyAppState extends State<MyApp> {
 
       int totalCount = firstUnreadReminderCount + secondUnreadReminderCount;
 
-      // Show a single dialog with all reminder messages
+      //show a single dialog with all reminder messages
       if (reminderMessages.isNotEmpty) {
         String message = reminderMessages.join('\n');
         await _scheduleNotification(
@@ -636,16 +616,15 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  //schedule notifications
   Future<void> _scheduleNotification(String userId, String docId,
       String message, int totalCount) async {
-    // Ensure the context is available and show a pop-up dialog
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
-        context: context, // Ensure you have access to the BuildContext
+        context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             backgroundColor: Colors.white,
-            // Background color of the AlertDialog
             title: Text("Notification"),
             content: Text(
                 "You have $totalCount unread reminder(s) in Notifications"),
@@ -663,7 +642,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-
+  //fetch the scheduled notifications
   Future<void> fetchNotifications(String username) async {
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
         .collection('dollar_sense')
@@ -678,6 +657,7 @@ class _MyAppState extends State<MyApp> {
           .collection('notifications')
           .get();
 
+      //get the count for each reminder
       int unreadFirstReminderCount = 0;
       int unreadSecondReminderCount = 0;
 
@@ -711,6 +691,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  //fetch the current base currency to display in the Home Page
   Future<void> fetchBaseCurrency() async {
     try {
       String username = widget.username;
@@ -734,7 +715,7 @@ class _MyAppState extends State<MyApp> {
             baseCurrency = baseCurrencyCode;
           });
         } else {
-          // If the user does not have a currency collection, set default to MYR 1.00
+          //if the user does not have a currency collection, set default to MYR (Malaysian Ringgit) with 1.00
           setState(() {
             baseCurrency = 'MYR';
           });
@@ -797,13 +778,13 @@ class _MyAppState extends State<MyApp> {
                   Text(
                     'Hello,',
                     style: TextStyle(
-                      fontSize: 12.0, // Adjust the font size as needed
+                      fontSize: 12.0,
                     ),
                   ),
                   Text(
                     widget.username,
                     style: TextStyle(
-                      fontSize: 18.0, // Adjust the font size as needed
+                      fontSize: 18.0,
                       fontWeight: FontWeight.bold,
                       fontFamily: GoogleFonts
                           .lato()
@@ -812,7 +793,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ],
               ),
-              Spacer(), // Push the following widget to the right
+              Spacer(),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                 decoration: BoxDecoration(
@@ -820,7 +801,7 @@ class _MyAppState extends State<MyApp> {
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Text(
-                    baseCurrency, // Replace with your current currency
+                    baseCurrency,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14.0,
@@ -901,6 +882,7 @@ class _MyAppState extends State<MyApp> {
                               minHeight: 12,
                             ),
                             child: Text(
+                              //update notifications icon to show the unread count of notifications
                               '$unreadNotificationsCount',
                               style: TextStyle(
                                 color: Colors.white,
@@ -993,7 +975,7 @@ class _MyAppState extends State<MyApp> {
                   ],
                 ),
               ),
-              // Card for displaying current net worth
+              //main card for displaying current net worth
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: MainCard(
@@ -1008,6 +990,7 @@ class _MyAppState extends State<MyApp> {
                     Row(
                       children: [
                         Expanded(
+                          //display income amount
                           child: HomePageCard(
                             title: 'Income',
                             amount: income.toStringAsFixed(2),
@@ -1027,6 +1010,7 @@ class _MyAppState extends State<MyApp> {
                         SizedBox(width: 16.0),
                         Expanded(
                           child: HomePageCard(
+                            //display expense amount
                               title: 'Expense',
                               amount: totalExpenses.toStringAsFixed(2),
                               icon: Icons.wallet,
@@ -1047,6 +1031,7 @@ class _MyAppState extends State<MyApp> {
                     Row(
                       children: [
                         Expanded(
+                          //display budget amount
                           child: HomePageCard(
                             title: 'Budget',
                             amount: totalBudget.toStringAsFixed(2),
@@ -1065,6 +1050,7 @@ class _MyAppState extends State<MyApp> {
                         SizedBox(width: 16.0),
                         Expanded(
                           child: HomePageCard(
+                            //display investment amount
                             title: 'Invest',
                             amount: totalInvest.toStringAsFixed(2),
                             icon: Icons.auto_graph,
@@ -1087,6 +1073,7 @@ class _MyAppState extends State<MyApp> {
             ],
           ),
         ),
+        //navigation bar
         floatingActionButton: CustomSpeedDial(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: CustomNavigationBar(

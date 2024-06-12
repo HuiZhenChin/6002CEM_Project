@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +8,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to convert the currency for the system
 class CurrencyConverterPage extends StatefulWidget {
   final String username;
   final Function(Currency) onCurrencyAdded;
@@ -20,23 +20,23 @@ class CurrencyConverterPage extends StatefulWidget {
 }
 
 class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
-  String baseCurrency = 'MYR';
-  late String currencyApiUrl;
-  Map<String, dynamic>? currencyData;
-  String selectedCurrency = 'USD';
-  late TextEditingController amountController;
-  late TextEditingController convertedAmountController;
+  String baseCurrency = 'MYR';  //set MYR (Malaysian Ringgit) as the base
+  late String currencyApiUrl;   //API url
+  Map<String, dynamic>? currencyData;  //currency data mapping
+  late TextEditingController amountController;  //control the current amount
+  late TextEditingController convertedAmountController;  //control the converted amount
   final viewModel = CurrencyConverterViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0;  //navigation bar position index
 
   @override
   void initState() {
     super.initState();
     amountController = TextEditingController();
     convertedAmountController = TextEditingController();
-    fetchBaseCurrency();
+    fetchBaseCurrency();  //fetch the current base currency in the application
   }
 
+  //function to fetch the base currency
   Future<void> fetchBaseCurrency() async {
     try {
       String username = widget.username;
@@ -45,6 +45,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
           .where('username', isEqualTo: username)
           .get();
 
+      //if user has done currency conversion in the system before, take that as the base until they change the currency again
       if (userSnapshot.docs.isNotEmpty) {
         String userId = userSnapshot.docs.first.id;
         CollectionReference currencyCollection = FirebaseFirestore.instance
@@ -57,12 +58,12 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         if (currencySnapshot.docs.isNotEmpty) {
           String baseCurrencyCode = currencySnapshot.docs.first['code'];
           setState(() {
-            baseCurrency = baseCurrencyCode;
-            updateApiUrl(baseCurrency);
-            fetchCurrencyAPIData();
+            baseCurrency = baseCurrencyCode;  //retrieve the currency code
+            updateApiUrl(baseCurrency);  //update the API url
+            fetchCurrencyAPIData();  //fetch the API data
           });
         } else {
-          // If the user does not have a currency collection, set default to MYR 1.00
+          //if the user does not have a currency conversion before, set default to MYR with 1.00
           setState(() {
             baseCurrency = 'MYR';
             updateApiUrl('MYR');
@@ -75,7 +76,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     }
   }
 
-
+  //function to update the API url with the currency code
   void updateApiUrl(String currencyCode) {
     setState(() {
       currencyApiUrl =
@@ -83,6 +84,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     });
   }
 
+  //function to fetch the currency API conversion rate data
   Future<void> fetchCurrencyAPIData() async {
     try {
       final response = await http.get(Uri.parse(currencyApiUrl));
@@ -98,39 +100,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     }
   }
 
-  void _showCurrencyDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Select Currency'),
-          content: currencyData == null
-              ? CircularProgressIndicator()
-              : Container(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: currencyData!['conversion_rates'].length,
-              itemBuilder: (context, index) {
-                String currency = currencyData!['conversion_rates'].keys
-                    .elementAt(index);
-                return ListTile(
-                  title: Text(currency),
-                  onTap: () {
-                    setState(() {
-                      selectedCurrency = currency;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
+  //pop-up dialog to allow user to choose a currency
   void _showCurrencyPickerDialog() {
     showDialog(
       context: context,
@@ -153,7 +123,6 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
                   onTap: () {
                     setState(() {
                       baseCurrency = currency;
-                      selectedCurrency = currency;
                       viewModel.codeController.text = currency;
                       viewModel.rateController.text = rate.toStringAsFixed(2);
                       updateRatesForBaseCurrency(currency);
@@ -171,6 +140,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     );
   }
 
+  //once a currency is chosen, update the base currency for conversion rates
   void updateRatesForBaseCurrency(String baseCurrency) {
     if (currencyData != null) {
       double baseRate = currencyData!['conversion_rates'][baseCurrency];
@@ -184,13 +154,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     }
   }
 
-  double convertAmount(double amount, String fromCurrency, String toCurrency,
-      Map<String, dynamic> rates) {
-    double fromRate = rates[fromCurrency];
-    double toRate = rates[toCurrency];
-    return amount * (toRate / fromRate);
-  }
-
+  //function to fetch the currency rates
   Future<void> _fetchCurrency() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -215,14 +179,14 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         if (currencyDocSnapshot.exists) {
           double currencyRate = currencyDocSnapshot['rate'];
 
-          // Update all collections with new currency rates
+          //update all collections with new currency rates
           await _updateAllCollections(userId, currencyRate, currencyDocRef);
         }
       }
     }
   }
 
-
+  //function to update all the expenses, budget, income and investment amount in the system when there is currency conversion
   Future<void> _updateAllCollections(String userId, double currencyRate,
       DocumentReference currencyDocRef) async {
     QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
@@ -231,6 +195,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         .collection('budget')
         .get();
 
+    //update all budget amount
     for (var doc in budgetSnapshot.docs) {
       double budgetAmount = doc['budget_amount'];
       double convertedBudgetAmount = budgetAmount * currencyRate;
@@ -243,6 +208,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         .collection('invest')
         .get();
 
+    //update all investment amount
     for (var doc in investSnapshot.docs) {
       double investAmount = doc['invest_amount'];
       double convertedInvestAmount = investAmount * currencyRate;
@@ -255,6 +221,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         .collection('income')
         .get();
 
+    //update all income amount
     for (var doc in incomeSnapshot.docs) {
       double income = doc['income'];
       double convertedIncome = income * currencyRate;
@@ -269,12 +236,14 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         .collection('expenses')
         .get();
 
+    //update all expenses amount
     for (var doc in expenseSnapshot.docs) {
       double expenseAmount = doc['amount'];
       double convertedExpenseAmount = expenseAmount * currencyRate;
       await doc.reference.update({'amount': convertedExpenseAmount});
     }
 
+    //update all amount extracted for notifications purpose
     QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
         .collection('dollar_sense')
         .doc(userId)
@@ -309,6 +278,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
+              //display the current base currency
               'Current Currency: $baseCurrency',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -318,6 +288,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
+            //display conversion rate data in a table fetched from API based on the base currency
             Expanded(
               child: currencyData != null
                   ? ListView.builder(
@@ -344,6 +315,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
             Row(
               children: [
                 Expanded(
+                  //if user selects a currency, display it
                   child: TextField(
                     controller: viewModel.codeController,
                     decoration: InputDecoration(
@@ -376,22 +348,12 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               ],
             ),
             SizedBox(height: 20),
-            TextField(
-              controller: amountController,
-              decoration: InputDecoration(
-                labelText: 'Enter Amount',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
                   onPressed: () {
+                    //save changes to database to update all amount in the system
                     viewModel.addCurrency(
                         widget.username, widget.onCurrencyAdded, context);
                     _fetchCurrency();
@@ -427,6 +389,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

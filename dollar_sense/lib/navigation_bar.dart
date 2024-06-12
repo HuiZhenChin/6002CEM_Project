@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 
+//navigation bar
 class CustomNavigationBar {
   final Function(int) onTabTapped;
   final int currentIndex;

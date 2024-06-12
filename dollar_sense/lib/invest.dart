@@ -9,6 +9,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to edit investments
 class InvestPage extends StatefulWidget {
   final String username;
   final Function(Invest) onInvestAdded;
@@ -24,13 +25,14 @@ class _InvestPageState extends State<InvestPage> {
   final viewModel = InvestViewModel();
   final historyViewModel = TransactionHistoryViewModel();
   final navigationBarViewModel = NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
   @override
   void initState() {
     super.initState();
   }
 
+  //input validation
   String? _validateField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName cannot be empty';
@@ -104,23 +106,23 @@ class _InvestPageState extends State<InvestPage> {
                             context: context,
                             initialDate: DateTime.now(),
                             firstDate: DateTime(2000),
-                            lastDate: DateTime.now(),
+                            lastDate: DateTime.now(), //block date after today
                             builder: (BuildContext context, Widget? child) {
                               return Theme(
                                 data: ThemeData.light().copyWith(
                                   dialogBackgroundColor: Colors.white,
                                   colorScheme: ColorScheme.light(
                                     primary: Colors.blue
-                                        .shade900, // Header background color
+                                        .shade900,
                                     onPrimary:
-                                        Colors.white, // Header text color
+                                        Colors.white,
                                     onSurface:
-                                        Colors.blue.shade900, // Body text color
+                                        Colors.blue.shade900,
                                   ),
                                   textButtonTheme: TextButtonThemeData(
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors
-                                          .blue.shade900, // Button text color
+                                          .blue.shade900,
                                     ),
                                   ),
                                 ),
@@ -179,8 +181,10 @@ class _InvestPageState extends State<InvestPage> {
                                   onPressed: () async {
                                     if (_formKey.currentState?.validate() ??
                                         false) {
+                                      //add new investments
                                       viewModel.addInvest(widget.onInvestAdded,
                                           widget.username, context);
+                                      //add record to history collection in the database
                                       String specificText =
                                           "Add Invest: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
                                       await historyViewModel.addHistory(
@@ -220,6 +224,7 @@ class _InvestPageState extends State<InvestPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

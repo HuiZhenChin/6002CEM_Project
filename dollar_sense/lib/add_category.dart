@@ -6,6 +6,7 @@ import 'navigation_bar.dart';
 import 'speed_dial.dart';
 import 'add_expense_custom_input_view.dart';
 
+//create new category for expense and budget
 class AddCategoryPage extends StatefulWidget {
   final String username;
 
@@ -16,20 +17,19 @@ class AddCategoryPage extends StatefulWidget {
 }
 
 class _AddCategoryPageState extends State<AddCategoryPage> {
-  String _selectedType = 'expenses';
-  final TextEditingController _categoryController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final navigationBarViewModel = NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  String _selectedType = 'expenses';  //default selection in dropdown list
+  final TextEditingController _categoryController = TextEditingController(); //category controller
+  int _bottomNavIndex = 0;  //navigation bar position index
 
   @override
   void initState() {
     super.initState();
   }
 
+  //function to save to database
   Future<void> saveCategoryToFirestore(String username, String newCategory,
       BuildContext context) async {
-    // Query Firestore to get the user ID from the username
+    // get the user ID from the username
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
         .collection('dollar_sense')
         .where('username', isEqualTo: username)
@@ -38,32 +38,33 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
 
-      // Determine the field name based on the selected type
+      // determine the field name based on the selected type
       String fieldName = _selectedType == 'expenses'
           ? 'expense_category'
           : 'budget_category';
 
-      // Retrieve the current categories array or create an empty array if it doesn't exist
+      // retrieve the current categories array or create an empty array if it doesn't exist
       List<String> currentCategories = (userSnapshot.docs.first.data() as Map<
           String,
           dynamic>?)?[fieldName]?.cast<String>() ?? [];
 
-      // Check if the new category already exists in the current categories
+      // check if the new category already exists in the current categories
       if (currentCategories.contains(newCategory)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Category already exists')),
         );
       } else {
-        // Add the new category to the existing categories array
+        // add the new category to the existing categories array
         currentCategories.add(newCategory);
 
-        // Update the categories array in Firestore
+        // update the categories array
         await FirebaseFirestore.instance.collection('dollar_sense')
             .doc(userId)
             .update({
           fieldName: currentCategories,
         });
 
+        //display message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('New category successfully added')),
         );
@@ -75,15 +76,18 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     }
   }
 
+  //function to insert into database
   void _addCategory(BuildContext context) {
     final newCategory = _categoryController.text.trim();
     if (newCategory.isEmpty) {
+      //check validation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Category name cannot be empty')),
       );
       return;
     }
 
+    //call the save function
     saveCategoryToFirestore(widget.username, newCategory, context);
   }
 
@@ -95,7 +99,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
         title: Text('Add Category'),
         actions: [
           IconButton(
-            icon: Icon(Icons.view_list),
+            icon: Icon(Icons.view_list),  //icon direct to view the list of category created
             onPressed: () {
               Navigator.push(
                 context,
@@ -120,11 +124,11 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.white, // Background color for the input field
+                  color: Colors.white,
                 ),
                 child: CustomInputField(
                   controller: _categoryController,
-                  labelText: 'Category Name',
+                  labelText: 'Category Name', //enter category name
                   inputFormatters: [],
                 ),
               ),
@@ -138,13 +142,14 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
                   border: Border.all(color: Color(0xFF39383D)),
                 ),
                 child: DropdownButton<String>(
+                  //text displayed change based on user selections
                   value: _selectedType,
                   onChanged: (String? newValue) {
                     setState(() {
                       _selectedType = newValue!;
                     });
                   },
-                  items: <String>['expenses', 'budget']
+                  items: <String>['expenses', 'budget']  //two choices
                       .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -164,11 +169,10 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Container(), // Empty container to occupy space
+                    child: Container(), // empty container for spacing
                   ),
                   SizedBox(
                     height: 50,
-                    // Adjust the height of the SizedBox for the button
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
@@ -180,16 +184,15 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
-                          // Transparent background color
+                          // transparent background color
                           elevation: 0,
-                          // No shadow
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                                 10), // Rounded corners
                           ),
                         ),
                         child: Text(
-                          'Add Category',
+                          'Add Category',  //add category button
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -204,6 +207,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
           ),
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

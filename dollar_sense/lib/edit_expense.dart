@@ -14,6 +14,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to edit expenses
 class EditExpense extends StatefulWidget {
   final Function(Expense) onExpenseUpdated;
   final String username;
@@ -36,10 +37,10 @@ class _EditExpenseState extends State<EditExpense> {
   bool _isSaving = false;
   final viewModel = AddExpenseViewModel();
   final historyViewModel = TransactionHistoryViewModel();
-  List<String> _budgetCategories = [];
+  List<String> _expenseCategories = []; //list of created expenses categories
   bool _isLoading = true;
   final navigationBarViewModel = NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
   String originalCategory = '';
   String originalPaymentMethod = '';
@@ -83,11 +84,13 @@ class _EditExpenseState extends State<EditExpense> {
     super.dispose();
   }
 
+  //encode to uploaded image to base64 string
   Future<String> convertImageToBase64(XFile imageFile) async {
     final List<int> imageBytes = await imageFile.readAsBytes();
     return base64Encode(imageBytes);
   }
 
+  //save changes for edited expenses
   void _saveExpense() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -114,7 +117,7 @@ class _EditExpenseState extends State<EditExpense> {
       }
 
       try {
-        // Get a reference to the document in Firestore
+        //get a reference to the document in Firestore
         String username = widget.username;
         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
@@ -135,7 +138,7 @@ class _EditExpenseState extends State<EditExpense> {
         String specificText = "Edit Expenses: ${titleController.text}";
         await historyViewModel.addHistory(
             specificText, widget.username, context);
-        // Show a snackbar to indicate success
+        //snackbar to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Expense updated'),
@@ -144,16 +147,15 @@ class _EditExpenseState extends State<EditExpense> {
 
         widget.onExpenseUpdated(updatedExpense);
 
-        // Update UI state
+       //update UI
         setState(() {
           _isEditing = false;
           _isSaving = false;
         });
       } catch (error) {
-        // Handle any errors that occur during the update process
         print('Error updating expense: $error');
 
-        // Show a snackbar to indicate failure
+        //snackbar to indicate failure
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update expense'),
@@ -161,7 +163,7 @@ class _EditExpenseState extends State<EditExpense> {
           ),
         );
 
-        // Reset UI state
+        //reset UI state
         setState(() {
           _isSaving = false;
         });
@@ -170,7 +172,7 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   void _cancelEdit() {
-    // Reset controllers to original values
+    //reset controllers to original values
     titleController.text = widget.expense.title;
     amountController.text = widget.expense.amount.toString();
     categoryController.text = widget.expense.category;
@@ -179,12 +181,13 @@ class _EditExpenseState extends State<EditExpense> {
     dateController.text = widget.expense.date;
     timeController.text = widget.expense.time;
 
-    // Update UI state
+    //update UI state
     setState(() {
       _isEditing = false;
     });
   }
 
+  //fetch the expenses categories
   Future<void> _fetchExpenseCategories() async {
     try {
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -198,13 +201,14 @@ class _EditExpenseState extends State<EditExpense> {
             userSnapshot.docs.first.data() as Map<String, dynamic>?;
 
         setState(() {
-          _budgetCategories = (userData?['expense_category'] as List<dynamic>?)
+          _expenseCategories = (userData?['expense_category'] as List<dynamic>?)
                   ?.cast<String>() ??
               [];
           _isLoading = false;
         });
 
-        if (_budgetCategories.isEmpty) {
+        //if no expense category found
+        if (_expenseCategories.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -231,6 +235,7 @@ class _EditExpenseState extends State<EditExpense> {
     }
   }
 
+  //pop-up dialog to choose category
   void showCategoryDialog(BuildContext context) async {
     await _fetchExpenseCategories();
     String selectedCategory = categoryController.text;
@@ -243,12 +248,13 @@ class _EditExpenseState extends State<EditExpense> {
             return AlertDialog(
               backgroundColor: Colors.white,
               title: Text('Select Category'),
-              content: _budgetCategories.isEmpty
+              content: _expenseCategories.isEmpty
                   ? Text(
+                //if no category created yet
                       'No category created, you may create a category through "+" -> category')
                   : Column(
                       mainAxisSize: MainAxisSize.min,
-                      children: _budgetCategories
+                      children: _expenseCategories
                           .map((category) => RadioListTile<String>(
                                 title: Text(category),
                                 value: category,
@@ -288,8 +294,9 @@ class _EditExpenseState extends State<EditExpense> {
     );
   }
 
+  //pop-up dialog to choose payment method for the expenses
   void showPaymentMethodDialog(BuildContext context) {
-    // Use a separate variable to track the selected payment method
+    //separate variable to track the selected payment method
     String selectedPaymentMethod = originalPaymentMethod;
 
     showDialog(
@@ -315,19 +322,19 @@ class _EditExpenseState extends State<EditExpense> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                // Update the payment method only if it's different from the original
+                //update the payment method only if different from the original
                 if (selectedPaymentMethod != originalPaymentMethod) {
                   setState(() {
                     paymentMethodController.text = selectedPaymentMethod;
                   });
                 }
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: Text('Save'),
             ),
@@ -337,35 +344,7 @@ class _EditExpenseState extends State<EditExpense> {
     );
   }
 
-  Widget _buildExpenseImage(Expense expense) {
-    if (expense.receiptImage != null || expense.imageBase64 != null) {
-      return GestureDetector(
-        onTap: () {
-          // Implement the image viewer dialog or action here
-        },
-        child: Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: _getImageWidget(expense),
-        ),
-      );
-    } else {
-      return Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: SizedBox.shrink(), // Empty container
-      );
-    }
-  }
-
+  //get the image
   Widget _getImageWidget(Expense expense) {
     if (expense.receiptImage != null) {
       if (kIsWeb) {
@@ -475,15 +454,15 @@ class _EditExpenseState extends State<EditExpense> {
                             dialogBackgroundColor: Colors.white,
                             colorScheme: ColorScheme.light(
                               primary: Colors
-                                  .blue.shade900, // Header background color
-                              onPrimary: Colors.white, // Header text color
+                                  .blue.shade900,
+                              onPrimary: Colors.white,
                               onSurface:
-                                  Colors.blue.shade900, // Body text color
+                                  Colors.blue.shade900,
                             ),
                             textButtonTheme: TextButtonThemeData(
                               style: TextButton.styleFrom(
                                 foregroundColor:
-                                    Colors.blue.shade900, // Button text color
+                                    Colors.blue.shade900,
                               ),
                             ),
                           ),
@@ -514,15 +493,15 @@ class _EditExpenseState extends State<EditExpense> {
                           data: ThemeData.light().copyWith(
                             colorScheme: ColorScheme.light(
                               primary: Colors
-                                  .blue.shade900, // Header background color
-                              onPrimary: Colors.white, // Header text color
+                                  .blue.shade900,
+                              onPrimary: Colors.white,
                               onSurface:
-                                  Colors.blue.shade900, // Body text color
+                                  Colors.blue.shade900,
                             ),
                             textButtonTheme: TextButtonThemeData(
                               style: TextButton.styleFrom(
                                 foregroundColor:
-                                    Colors.blue.shade900, // Button text color
+                                    Colors.blue.shade900,
                               ),
                             ),
                           ),
@@ -536,7 +515,7 @@ class _EditExpenseState extends State<EditExpense> {
                   },
                 ),
                 SizedBox(height: 10),
-                // Upload Receipt button
+                //Upload Receipt button
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
@@ -550,10 +529,9 @@ class _EditExpenseState extends State<EditExpense> {
                       if (pickedFile != null) {
                         setState(() {
                           widget.expense.receiptImage =
-                              File(pickedFile.path); // Update receiptImage
+                              File(pickedFile.path); //Update receiptImage
                         });
-                        // Convert and set base64
-                        // Implement your logic to convert the image to base64 if needed
+
                       }
                     },
                     child: Text('Upload Receipt'),
@@ -572,7 +550,7 @@ class _EditExpenseState extends State<EditExpense> {
                   ),
                 ),
                 SizedBox(height: 10),
-                // Display uploaded image
+                //display uploaded image
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.black),
@@ -585,7 +563,7 @@ class _EditExpenseState extends State<EditExpense> {
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Button to remove the picture
+                          //button to remove the uploaded picture
                           IconButton(
                             onPressed: () {
                               setState(() {
@@ -595,7 +573,7 @@ class _EditExpenseState extends State<EditExpense> {
                             icon: Icon(Icons.delete),
                             color: Colors.black,
                           ),
-                          // Button to view the picture
+                          //button to view the picture
                           IconButton(
                             onPressed: () {
                               showDialog(
@@ -688,7 +666,7 @@ class _EditExpenseState extends State<EditExpense> {
                           ),
                           child: ElevatedButton(
                             onPressed: () {
-                              _cancelEdit();
+                              _cancelEdit();  //cancel edit
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
@@ -716,7 +694,7 @@ class _EditExpenseState extends State<EditExpense> {
                           ),
                           child: ElevatedButton(
                             onPressed: () async {
-                              _saveExpense();
+                              _saveExpense();  //save changes
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
@@ -740,6 +718,7 @@ class _EditExpenseState extends State<EditExpense> {
           ),
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

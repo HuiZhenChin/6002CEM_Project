@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
+//custom floating button "+" for the navigation bar
 class CustomSpeedDial extends StatefulWidget {
   @override
   _CustomSpeedDialState createState() => _CustomSpeedDialState();
@@ -18,6 +19,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
       overlayOpacity: 0.5,
       children: [
         SpeedDialChild(
+          //direct to income page
           child: Icon(Icons.attach_money),
           backgroundColor: Color(0xFFE9C4CB),
           label: 'Income',
@@ -26,6 +28,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
           },
         ),
         SpeedDialChild(
+          //direct to add expenses page
           child: Icon(Icons.wallet),
           backgroundColor: Color(0xFFC0A3C0),
           label: 'Expense',
@@ -34,6 +37,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
           },
         ),
         SpeedDialChild(
+          //direct to create budget page
           child: Icon(Icons.calculate_outlined),
           backgroundColor: Color(0xFF9284B4),
           label: 'Budget',
@@ -42,6 +46,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
           },
         ),
         SpeedDialChild(
+          //direct to add investments page
           child: Icon(Icons.auto_graph),
           backgroundColor: Color(0xFF5467AA),
           label: 'Invest',
@@ -50,6 +55,7 @@ class _CustomSpeedDialState extends State<CustomSpeedDial> {
           },
         ),
         SpeedDialChild(
+          //direct to add new category page
           child: Icon(Icons.category_rounded),
           backgroundColor: Color(0xFF1E50A1),
           label: 'Category',

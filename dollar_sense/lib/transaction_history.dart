@@ -6,6 +6,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to display history records
 class TransactionHistoryPage extends StatefulWidget {
   final String username;
 
@@ -24,7 +25,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   @override
   void initState() {
     super.initState();
-    _fetchHistory();
+    _fetchHistory();  //fetch history records
   }
 
   Future<void> _fetchHistory() async {
@@ -41,7 +42,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           .doc(userId)
           .collection('history')
           .orderBy('history_date',
-          descending: true) // Order by history_date in descending order
+          descending: true) //order by history_date in descending order (latest records on top)
           .get();
 
       setState(() {
@@ -58,6 +59,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     }
   }
 
+  //clear history records if user pressed the "Delete" icon
   Future<void> _clearHistory() async {
     try {
       String username = widget.username;
@@ -77,7 +79,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
         List<DocumentReference> documents =
         historySnapshot.docs.map((doc) => doc.reference).toList();
 
-        // Delete each document in batches of 500 to avoid exceeding the limit
+        //delete each document in batches of 500 to avoid exceeding the limit
+        //normally there are many records in history
         for (var i = 0; i < documents.length; i += 500) {
           List<DocumentReference> batch = documents.sublist(
               i, (i + 500) > documents.length ? documents.length : i + 500);
@@ -108,6 +111,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     }
   }
 
+  //show delete confirmation dialog
   Future<void> _showDeleteConfirmationDialog(BuildContext context) async {
     bool? confirmed = await showDialog<bool>(
       context: context,
@@ -119,19 +123,19 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context, false); // Return false to indicate cancel
+                Navigator.pop(context, false); //return false to indicate cancel
               },
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, // Button text color
+                foregroundColor: Colors.blue,
               ),
               child: Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context, true); // Return true to indicate confirmation
+                Navigator.pop(context, true); //return true to indicate confirmation
               },
               style: TextButton.styleFrom(
-                foregroundColor: Colors.red, // Button text color
+                foregroundColor: Colors.red,
               ),
               child: Text('Clear'),
             ),
@@ -141,7 +145,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     );
 
     if (confirmed == true) {
-      await _clearHistory();
+      await _clearHistory();  //clear history records
     }
   }
 
@@ -171,6 +175,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             ? Center(child: CircularProgressIndicator())
             : _buildHistoryList(_history),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
@@ -185,6 +190,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     if (history.isEmpty) {
       return Center(
         child: Text(
+          //if no history records found
           'No history recorded',
           style: TextStyle(fontSize: 18, color: Colors.grey),
         ),

@@ -5,6 +5,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to add income source
 class IncomePage extends StatefulWidget {
   final String username;
   final Function() onIncomeUpdated;
@@ -21,15 +22,16 @@ class _IncomePageState extends State<IncomePage> {
   bool _isEditing = false;
   double _totalIncome = 0.0;
   final _formKey = GlobalKey<FormState>();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
   final historyViewModel = TransactionHistoryViewModel();
 
   @override
   void initState() {
     super.initState();
-    _fetchIncome();
+    _fetchIncome();  //fetch the current income source
   }
 
+  //fetch all the income source
   Future<void> _fetchIncome() async {
     try {
       String username = widget.username;
@@ -54,22 +56,24 @@ class _IncomePageState extends State<IncomePage> {
               TextEditingController controller = TextEditingController(text: incomeValue.toString());
               _incomeControllers.add(controller);
             }
-            _updateTotalIncome();
+            _updateTotalIncome();  //update the total income
           });
         } else {
           setState(() {
-            _incomeControllers.clear(); // Clear any existing controllers
-            _addIncomeSource(); // Add one empty income source
+            _incomeControllers.clear(); //clear any existing controllers
+            _addIncomeSource(); //add one empty income source text input field
           });
         }
       }
     } catch (e) {
+      //error handling
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error fetching income: $e')),
       );
     }
   }
 
+  //press to edit, or else read-only mode
   void _toggleEdit() {
     setState(() {
       _isEditing = !_isEditing;
@@ -79,6 +83,7 @@ class _IncomePageState extends State<IncomePage> {
     });
   }
 
+  //save modificiations
   void _saveIncome() {
     if (_formKey.currentState?.validate() ?? false) {
       String username = widget.username;
@@ -102,7 +107,7 @@ class _IncomePageState extends State<IncomePage> {
             SnackBar(content: Text('Income successfully modified')),
           );
 
-          // Add record to history table
+          //add record to history collection in the database
           String specificText = "Modified Income";
           historyViewModel.addHistory(specificText, widget.username, context);
         }
@@ -114,15 +119,18 @@ class _IncomePageState extends State<IncomePage> {
     }
   }
 
+  //add more income source if any
   void _addIncomeSource() {
     setState(() {
       _incomeControllers.add(TextEditingController());
     });
-    // Add record to history table
+
+    //add record to history collection in the database
     String specificText = "Add Income Source";
     historyViewModel.addHistory(specificText, widget.username, context);
   }
 
+  //update the income after changes
   void _updateTotalIncome() {
     setState(() {
       _totalIncome = _incomeControllers.fold(0.0, (sum, controller) {
@@ -132,6 +140,7 @@ class _IncomePageState extends State<IncomePage> {
     });
   }
 
+  //input validation
   String? _validateIncome(String? value) {
     if (value == null || value.isEmpty) {
       return 'Income cannot be empty';
@@ -235,6 +244,7 @@ class _IncomePageState extends State<IncomePage> {
                   ),
                 SizedBox(height: 20),
                 Text(
+                  //display total income
                   'Total Income: $_totalIncome',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -247,6 +257,7 @@ class _IncomePageState extends State<IncomePage> {
           ),
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

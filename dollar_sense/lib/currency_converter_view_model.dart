@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'currency_converter_model.dart';
 
+//currency view model
 class CurrencyConverterViewModel {
   final TextEditingController codeController = TextEditingController();
   final TextEditingController rateController= TextEditingController();

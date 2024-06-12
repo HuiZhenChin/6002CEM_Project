@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dollar_sense/budget_notifications.dart';
 import 'package:dollar_sense/budget_notifications_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +10,7 @@ import 'transaction_history_view_model.dart';
 import 'add_expense_custom_input_view.dart';
 import 'currency_input_formatter.dart';
 
+//edit budget page
 class EditBudget extends StatefulWidget {
   final Function(Budget) onBudgetUpdated;
   final String username;
@@ -33,12 +33,13 @@ class _EditBudgetState extends State<EditBudget> {
   bool _isSaving = false;
   final historyViewModel = TransactionHistoryViewModel();
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0;  //navigation bar position index
 
   late TextEditingController amountController;
   late TextEditingController monthController;
   late TextEditingController yearController;
 
+  //get the original value
   late double originalAmount;
   late String originalMonth;
   late String originalYear;
@@ -52,7 +53,7 @@ class _EditBudgetState extends State<EditBudget> {
     monthController = TextEditingController(text: widget.budget.month);
     yearController = TextEditingController(text: widget.budget.year);
 
-    // Store the original values
+    //store the original values
     originalAmount = widget.budget.amount;
     originalMonth = widget.budget.month;
     originalYear = widget.budget.year;
@@ -67,12 +68,14 @@ class _EditBudgetState extends State<EditBudget> {
     super.dispose();
   }
 
+  //save the new changes for the budget
   void _saveBudget() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSaving = true;
       });
 
+      //update the changes
       Budget updatedBudget = Budget(
         id: widget.budget.id,
         category: widget.budget.category,
@@ -99,6 +102,7 @@ class _EditBudgetState extends State<EditBudget> {
               .update(updatedBudget.toMap());
         }
 
+        //save activity record to history collection in database
         String specificText = "Edit Budget: ${widget.budget.category} ";
         await historyViewModel.addHistory(
             specificText, widget.username, context);
@@ -132,7 +136,7 @@ class _EditBudgetState extends State<EditBudget> {
   }
 
   void _cancelEdit() {
-    // Set controllers' text back to original values
+    //set controllers to original values
     amountController.text = originalAmount.toString();
     monthController.text = originalMonth;
     yearController.text = originalYear;
@@ -142,6 +146,7 @@ class _EditBudgetState extends State<EditBudget> {
     });
   }
 
+  //amount input validation
   String? _validateAmount(String? value) {
     if (value == null || value.isEmpty) {
       return 'Amount cannot be empty';
@@ -156,6 +161,7 @@ class _EditBudgetState extends State<EditBudget> {
     return null;
   }
 
+  //pop-up dialog to select the month and year
   Future<void> _pickMonthAndYear(BuildContext context) async {
     int? selectedYear;
     String? selectedMonth;
@@ -240,7 +246,7 @@ class _EditBudgetState extends State<EditBudget> {
     );
   }
 
-// Fetch Budget Notifications Data
+  //fetch budget notifications data (for any budget that have set notifications)
   Future<List<BudgetNotifications>> _fetchBudgetNotifications() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -264,15 +270,6 @@ class _EditBudgetState extends State<EditBudget> {
       return [];
     }
 
-  }
-
-
-  String? _validateField(String? value, String fieldName) {
-    if (value == null || value.isEmpty) {
-      return '$fieldName cannot be empty';
-    }
-
-    return null;
   }
 
   @override
@@ -349,7 +346,7 @@ class _EditBudgetState extends State<EditBudget> {
                                   onPressed: () {
                                     _cancelEdit();
                                     Navigator.pop(
-                                        context); // Dismiss the EditBudget screen
+                                        context);
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
@@ -377,6 +374,7 @@ class _EditBudgetState extends State<EditBudget> {
 
                                 ),
                                 child: ElevatedButton(
+                                  //update the changes
                                   onPressed: _isSaving ? null : _saveBudget,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
@@ -405,6 +403,7 @@ class _EditBudgetState extends State<EditBudget> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

@@ -6,6 +6,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to display list of expenses and budget categories
 class CategoriesPage extends StatefulWidget {
   final String username;
 
@@ -19,19 +20,18 @@ class _CategoriesPageState extends State<CategoriesPage> {
   List<String> _expenseCategories = [];
   List<String> _budgetCategories = [];
   bool _isLoading = true;
-  final navigationBarViewModel = NavigationBarViewModel();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0;  //navigation bar position index
 
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
+    _fetchCategories();  //fetch the list of categories to display
   }
 
   Future<void> _fetchCategories() async {
     try {
-      // Query Firestore to get the user ID from the username
+      //get the user ID from the username
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .where('username', isEqualTo: widget.username)
@@ -41,6 +41,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         String userId = userSnapshot.docs.first.id;
         Map<String, dynamic>? userData = userSnapshot.docs.first.data() as Map<String, dynamic>?;
 
+        //fetch expense and budget categories
         setState(() {
           _expenseCategories = (userData?['expense_category'] as List<dynamic>?)?.cast<String>() ?? [];
           _budgetCategories = (userData?['budget_category'] as List<dynamic>?)?.cast<String>() ?? [];
@@ -58,9 +59,10 @@ class _CategoriesPageState extends State<CategoriesPage> {
     }
   }
 
+  //function to delete the category
   Future<void> _deleteCategory(String category, String type) async {
     try {
-      // Query Firestore to get the user ID from the username
+
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .where('username', isEqualTo: widget.username)
@@ -84,7 +86,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
             .get();
 
         if (expensesSnapshot.docs.isNotEmpty) {
-          // Show a dialog informing the user about existing expenses under the category
+          //show a dialog informing the user about existing expenses under the category
+          //if user wants to delete a category that is having expenses stored under it
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -96,19 +99,19 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.of(context).pop();
                     },
                     child: Text('Cancel'),
                   ),
                   TextButton(
                     onPressed: () async {
-                      // Delete the expenses under the category
+                      //delete the expenses under the category
                       for (QueryDocumentSnapshot expense in expensesSnapshot.docs) {
                         await expense.reference.delete();
                       }
-                      // Proceed with deleting the category
+                      //proceed with deleting the category
                       await _deleteCategoryAndExpenses(userId, category, type, currentCategories);
-                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.of(context).pop();
                     },
                     child: Text('Delete'),
                   ),
@@ -117,7 +120,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
             },
           );
         } else {
-          // No expenses under the category, proceed with deleting the category
+          //if no expenses under the category, proceed with deleting the category
           await _deleteCategoryAndExpenses(userId, category, type, currentCategories);
         }
       } else {
@@ -132,18 +135,19 @@ class _CategoriesPageState extends State<CategoriesPage> {
     }
   }
 
+  //function to delete both category and its stored expenses
   Future<void> _deleteCategoryAndExpenses(String userId, String category, String type, List<String> currentCategories) async {
-    // Remove the category from the array
+    //remove the category from the array
     currentCategories.remove(category);
 
-    // Update the categories array in Firestore
+    //update the categories array in Firestore
     await FirebaseFirestore.instance.collection('dollar_sense')
         .doc(userId)
         .update({
       type == 'expenses' ? 'expense_category' : 'budget_category': currentCategories,
     });
 
-    // Update the local state
+    //update the local state
     setState(() {
       if (type == 'expenses') {
         _expenseCategories = currentCategories;
@@ -152,12 +156,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
       }
     });
 
+    //message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Category successfully deleted')),
     );
   }
 
-
+  //function to rename a created category
   Future<void> _renameCategory(String oldCategory, String type) async {
     TextEditingController _renameController = TextEditingController();
     _renameController.text = oldCategory;
@@ -187,7 +192,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 TextButton(
                   onPressed: () async {
                     try {
-                      // Check if the new category name already exists in the appropriate collection
+                      //check if the new category name already exists in the appropriate collection
                       bool categoryExists = await checkCategoryExists(
                         widget.username,
                         _renameController.text,
@@ -195,7 +200,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       );
 
                       if (categoryExists) {
-                        Navigator.of(context).pop(); // Close the rename dialog
+                        Navigator.of(context).pop();
                         showDialog(
                           context: context,
                           builder: (BuildContext context) {
@@ -222,8 +227,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                           ),
                         );
                       } else {
-                        // Proceed with renaming the category
-                        // Query Firestore to get the user ID from the username
+                        //proceed with renaming the category
                         QuerySnapshot userSnapshot = await FirebaseFirestore
                             .instance
                             .collection('dollar_sense')
@@ -233,23 +237,23 @@ class _CategoriesPageState extends State<CategoriesPage> {
                         if (userSnapshot.docs.isNotEmpty) {
                           String userId = userSnapshot.docs.first.id;
 
-                          // Determine the field name based on the category type
+                          //determine the field name based on the category type
                           String fieldName = type == 'expenses'
                               ? 'expense_category'
                               : 'budget_category';
 
-                          // Retrieve the current categories array
+                          //retrieve the current categories array
                           List<String> currentCategories = (userSnapshot.docs.first
                               .data() as Map<String, dynamic>?)?[fieldName]
                               ?.cast<String>() ?? [];
 
-                          // Update the category name in the array
+                          //update the category name in the array
                           int index = currentCategories.indexOf(oldCategory);
                           if (index != -1) {
                             currentCategories[index] =
                                 _renameController.text;
 
-                            // Update the categories array in Firestore
+                            //update the categories array in Firestore
                             await FirebaseFirestore.instance
                                 .collection('dollar_sense')
                                 .doc(userId)
@@ -257,7 +261,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                               fieldName: currentCategories,
                             });
 
-                            // Update the local state
+                            //update the local state
                             setState(() {
                               if (type == 'expenses') {
                                 _expenseCategories = currentCategories;
@@ -274,6 +278,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                     CategoriesPage(username: widget.username),
                               ),
                             );
+
+                            //message
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                   content: Text(
@@ -312,6 +318,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 
+  //function to check if the category exists/ already created
   Future<bool> checkCategoryExists(String username, String category, String type) async {
     try {
       QuerySnapshot userSnapshot = await _firestore
@@ -354,7 +361,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           child: Column(
             children: [
               SizedBox(
-                height: 50, // Adjust the height of the SizedBox for the button
+                height: 50,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
@@ -372,11 +379,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
-                      // Transparent background color
                       elevation: 0,
-                      // No shadow
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10), // Rounded corners
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     child: Text(
@@ -409,6 +414,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ),
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
@@ -418,8 +424,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 
-
+  //list view to display categories
   Widget _buildCategoryList(List<String> categories, String type) {
+    //display message if no expense or budget category found
     if (categories.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -439,6 +446,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              //rename category
               IconButton(
                 icon: Icon(Icons.edit),
                 onPressed: () {
@@ -446,6 +454,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 },
               ),
               IconButton(
+                //delete category
                 icon: Icon(Icons.delete),
                 onPressed: () {
                   _deleteCategory(categories[index], type);

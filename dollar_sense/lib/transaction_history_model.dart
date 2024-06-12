@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//history class
 class History {
   String text;
   String date;
@@ -11,6 +12,7 @@ class History {
 
   });
 
+  //map the Firestore document fields to History attributes
   factory History.fromDocument(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return History(

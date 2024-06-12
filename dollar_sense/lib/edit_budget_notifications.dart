@@ -2,15 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dollar_sense/budget_notifications.dart';
 import 'package:dollar_sense/budget_notifications_model.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'budget_model.dart';
 import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
-import 'transaction_history_view_model.dart';
 import 'add_expense_custom_input_view.dart';
-import 'currency_input_formatter.dart';
 
+//page to edit budget notifications
 class EditBudgetNotifications extends StatefulWidget {
   final Function(BudgetNotifications) onBudgetNotificationsUpdated;
   final String username;
@@ -32,13 +29,14 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
   late TextEditingController notificationCategoryController;
   late TextEditingController reminderTypeController;
   late TextEditingController firstReminderController;
   late TextEditingController secondReminderController;
 
+  //get the original value
   late String originalReminderType;
   late String originalFirstReminder;
   late String originalSecondReminder;
@@ -56,6 +54,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     firstReminderController = TextEditingController(text: widget.budgetNotifications.firstReminder);
     secondReminderController = TextEditingController(text: widget.budgetNotifications.secondReminder);
 
+    //store original value
     originalReminderType= widget.budgetNotifications.reminderType;
     originalFirstReminder= widget.budgetNotifications.firstReminder;
     originalSecondReminder= widget.budgetNotifications.secondReminder;
@@ -71,11 +70,13 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     super.dispose();
   }
 
+  //save changes for edited budget notifications
   void _saveBudgetNotifications() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSaving = true;
       });
+
 
       BudgetNotifications updatedBudgetNotifications = BudgetNotifications(
         id: widget.budgetNotifications.id,
@@ -132,7 +133,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
   }
 
   void _cancelEdit() {
-    // Set controllers' text back to original values
+    //set controllers to original values
     reminderTypeController.text= originalReminderType;
     firstReminderController.text= originalFirstReminder;
     secondReminderController.text= originalSecondReminder;
@@ -142,7 +143,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     });
   }
 
-// Fetch Budget Notifications Data
+  //fetch budget notifications data
   Future<List<BudgetNotifications>> _fetchBudgetNotifications() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -168,6 +169,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
 
   }
 
+  //pop-up dialog for reminder type
   Future<void> _showReminderTypeDialog() async {
     await showDialog(
       context: context,
@@ -208,9 +210,8 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     );
   }
 
-
+  //pop-up dialog for first reminder
   void _showFirstReminderDialog() async {
-    String originalSecondReminder = firstReminderController.text;
 
     await showDialog(
       context: context,
@@ -243,6 +244,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     );
   }
 
+  //pop-up dialog for second reminder
   void _showSecondReminderDialog() async {
     String originalSecondReminder = secondReminderController.text;
 
@@ -277,6 +279,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     );
   }
 
+  //text input validation
   String? _validateField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName cannot be empty';
@@ -310,6 +313,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                       FutureBuilder<List<BudgetNotifications>>(
                         future: _fetchBudgetNotifications(),
                         builder: (context, snapshot) {
+                          //if there is no budget notifications set yet
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return Center(
                               child: CircularProgressIndicator(),
@@ -429,6 +433,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

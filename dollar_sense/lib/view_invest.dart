@@ -9,6 +9,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to view list of investments
 class ViewInvestPage extends StatefulWidget {
   final String username;
 
@@ -21,18 +22,18 @@ class ViewInvestPage extends StatefulWidget {
 class _ViewInvestPageState extends State<ViewInvestPage> {
   int currentIndex = 0;
   final navigationBarViewModel = NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0;  //navigation bar position index
   List<Invest> invests = [];
   final viewModel = InvestViewModel();
   final historyViewModel = TransactionHistoryViewModel();
   String _currentFilter = 'None';
-  bool _isFiltered = false;
+  bool _isFiltered = false;  //for filtering purpose
 
 
   @override
   void initState() {
     super.initState();
-    _fetchInvest();
+    _fetchInvest();  //fetch the list of investments
   }
 
   Future<List<Invest>> _fetchInvest() async {
@@ -55,27 +56,28 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
           .map((doc) => Invest.fromDocument(doc))
           .toList();
     } else {
-      // Return an empty list if no expenses found
+      //return an empty list if no investments found
       return [];
     }
   }
 
+  //update changes after editing
   void _updateInvest(Invest editedInvest) {
     setState(() {
-      // Find the index of the edited expense in the expenses list
+      //find the index of the edited expense in the invest list
       int index = invests.indexWhere((invest) => invest.id == editedInvest.id);
       if (index != -1) {
-        // Replace the edited expense with the new one
+        //replace the edited expense with the new one
         invests[index] = editedInvest;
       }
     });
   }
 
+  //edit investments
   void _editInvest(Invest invest) async {
-    // Retrieve the document ID associated with the selected expense
     String documentId = await _getDocumentId(invest);
 
-    // Navigate to the edit expense screen and pass the document ID
+    //navigate to the edit investments page and pass the document ID
     Invest editedInvest = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -88,13 +90,14 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
       ),
     );
 
-    // Check if an expense was edited
+    //check if a investment was edited
     if (editedInvest != null) {
-      // Update the UI with the edited expense
+      //update the UI with the edited investments
       _updateInvest(editedInvest);
     }
   }
 
+  //get document Id of the edited investment
   Future<String> _getDocumentId(Invest invest) async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -116,10 +119,11 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
         return expenseSnapshot.docs.first.id;
       }
     }
-    // Return an empty string or handle the case where the document ID is not found
+    //return an empty string or handle the case where the document ID is not found
     return '';
   }
 
+  //delete investments
   Future<void> _deleteInvest(Invest invest) async {
     bool? confirmDelete = await _showConfirmationDialog(context, 'delete', invest);
     if (confirmDelete == true) {
@@ -136,43 +140,44 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
             .collection('dollar_sense')
             .doc(userId)
             .collection('invest')
-            .doc(documentId) // Specify the document ID of the investment to delete
+            .doc(documentId) //specify the document ID of the investment to delete
             .delete();
 
         setState(() {
-          // Remove the deleted investment from the list
+          //remove the deleted investment from the list
           invests.removeWhere((element) => element.id == invest.id);
         });
 
-        // Add the history entry with the title of the deleted investment
+        //add the history record
         String specificText = "Delete Invest: ${invest.title}";
         await historyViewModel.addHistory(specificText, widget.username, context);
       }
     }
   }
 
+  //show delete confirmation dialog
   Future<bool?> _showConfirmationDialog(BuildContext context, String action, Invest invest) {
     return showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.white, // Background color of the dialog
+          backgroundColor: Colors.white,
           title: Text('Confirm $action'),
           content: Text('Are you sure you want to $action this investment?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, // Button text color
+                foregroundColor: Colors.blue,
               ),
               child: Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true); // Close the dialog and confirm
+                Navigator.of(context).pop(true);
               },
               style: TextButton.styleFrom(
-                foregroundColor: Colors.red, // Button text color
+                foregroundColor: Colors.red,
               ),
               child: Text('Confirm'),
             ),
@@ -182,6 +187,7 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
     );
   }
 
+  //filter investments
   List<Invest> _filterInvests(List<Invest> invests) {
     switch (_currentFilter) {
       case 'Title (A-Z)':
@@ -273,6 +279,7 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
                   );
                 },
               );
+              //show the filtered results
               if (result != null) {
                 setState(() {
                   _currentFilter = result;
@@ -301,6 +308,7 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
             } else if (snapshot.data!.isEmpty) {
               return Center(
                 child: Text(
+                  //if no investments found
                   'No investments found',
                   style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
@@ -313,13 +321,13 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
                 itemCount: filteredInvests.length,
                 itemBuilder: (context, index) {
                   final invest = filteredInvests[index];
-                  final isOdd = index % 2 == 0; // Check if the index is odd
+                  final isOdd = index % 2 == 0; //check if the index is odd
 
                   return Container(
                     color: isOdd
                         ? Colors.grey[200]!.withOpacity(0.8)
                         : Colors.white!.withOpacity(
-                            0.8), // Set background color based on index
+                            0.8), //set background color based on index
                     child: ListTile(
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -343,9 +351,10 @@ class _ViewInvestPageState extends State<ViewInvestPage> {
                           ),
                           IconButton(
                             icon: Icon(Icons.delete),
+                            //delete investments
                             onPressed: () async {
                               _deleteInvest(
-                                  invest); // Pass the document ID of the investment
+                                  invest);
                             },
                           ),
                         ],

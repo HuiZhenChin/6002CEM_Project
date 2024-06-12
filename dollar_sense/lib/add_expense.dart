@@ -25,6 +25,7 @@ Future<void> main() async {
   );
 }
 
+// create new expenses page
 class AddExpensePage extends StatefulWidget {
   final Function(Expense) onExpenseAdded;
   final String username;
@@ -36,14 +37,13 @@ class AddExpensePage extends StatefulWidget {
 }
 
 class _AddExpensePageState extends State<AddExpensePage> {
-  final _formKey = GlobalKey<FormState>();
-  final viewModel = AddExpenseViewModel();
-  final historyViewModel = TransactionHistoryViewModel();
-  List<String> _budgetCategories = [];
-  bool _isLoading = true;
+  final _formKey = GlobalKey<FormState>(); //used for form validation
+  final viewModel = AddExpenseViewModel(); //add expense view model
+  final historyViewModel = TransactionHistoryViewModel();  //history view model
+  List<String> _expenseCategories = []; //array to store the created expense category from the Add Category Page
+  bool _isLoading = true; //page load
   String selectedCategory = "";
-  final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
 
   @override
@@ -53,6 +53,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
   }
 
+  //validation for empty input of required field
   String? _validateField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName cannot be empty';
@@ -61,6 +62,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     return null;
   }
 
+  //validate amount of expenses entered
   String? _validateAmount(String? value) {
     if (value == null || value.isEmpty) {
       return 'Amount cannot be empty';
@@ -75,6 +77,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     return null;
   }
 
+  //fetch the list of expense categories from selection
   Future<void> _fetchExpenseCategories() async {
     try {
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -87,14 +90,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
         Map<String, dynamic>? userData =
         userSnapshot.docs.first.data() as Map<String, dynamic>?;
 
+        //if categories are found, store in a list
         setState(() {
-          _budgetCategories = (userData?['expense_category'] as List<dynamic>?)
+          _expenseCategories = (userData?['expense_category'] as List<dynamic>?)
               ?.cast<String>() ??
               [];
           _isLoading = false;
         });
 
-        if (_budgetCategories.isEmpty) {
+        //if no expense category created
+        if (_expenseCategories.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('No category created, you may create a category through "+" -> category')),
           );
@@ -112,6 +117,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
   }
 
+  //the fetched categories will be displayed to users in a pop-up dialog format
   void showCategoryDialog() {
     _fetchExpenseCategories();
     showDialog(
@@ -122,8 +128,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
           title: Text('Select Category'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: _budgetCategories.isNotEmpty
-                ? _budgetCategories
+            children: _expenseCategories.isNotEmpty
+                ? _expenseCategories
                 .map((category) =>
                 RadioListTile<String>(
                   title: Text(category),
@@ -152,7 +158,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
         title: Text('Add Expenses'),
         actions: [
           IconButton(
-            icon: Icon(Icons.format_list_bulleted_sharp),
+            icon: Icon(Icons.format_list_bulleted_sharp), //icon direct to view the list of expenses
             onPressed: () {
               Navigator.push(
                 context,
@@ -183,7 +189,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       SizedBox(height: 10),
                       CustomInputField(
                         controller: viewModel.categoryController,
-                        labelText: 'Category',
+                        labelText: 'Category', //choose category
                         inputFormatters: [],
                         onTap: () => showCategoryDialog(),
                         validator: (value) => _validateField(value, 'Category'),
@@ -192,7 +198,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       // Payment method input
                       CustomInputField(
                         controller: viewModel.paymentMethodController,
-                        labelText: 'Payment Method',
+                        labelText: 'Payment Method', //choose payment method
                         inputFormatters: [],
                         onTap: () => viewModel.showPaymentMethodDialog(context),
                         validator: (value) =>
@@ -202,7 +208,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       // Title input
                       CustomInputField(
                         controller: viewModel.titleController,
-                        labelText: 'Title',
+                        labelText: 'Title', //enter expense title
                         inputFormatters: [],
                         validator: (value) => _validateField(value, 'Title'),
                       ),
@@ -210,7 +216,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       // Amount input
                       CustomInputField(
                         controller: viewModel.amountController,
-                        labelText: 'Amount',
+                        labelText: 'Amount', //enter amount spent
                         keyboardType: TextInputType.number,
                         inputFormatters: [CurrencyInputFormatter()],
                         validator: _validateAmount,
@@ -219,7 +225,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       // Date input
                       CustomInputField(
                         controller: viewModel.dateController,
-                        labelText: 'Date',
+                        labelText: 'Date', //choose date
                         keyboardType: TextInputType.datetime,
                         inputFormatters: [],
                         validator: (value) => _validateField(value, 'Date'),
@@ -228,7 +234,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                             context: context,
                             initialDate: DateTime.now(),
                             firstDate: DateTime(2000),
-                            lastDate: DateTime.now(),
+                            lastDate: DateTime.now(),  //block dates after today
                             builder: (BuildContext context, Widget? child) {
                               return Theme(
                                 data: ThemeData.light().copyWith(
@@ -248,6 +254,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               );
                             },
                           );
+                          //selected date will be stored in controller
                           if (pickedDate != null) {
                             final formattedDate = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
                             viewModel.dateController.text = formattedDate;
@@ -258,7 +265,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       // Time input
                       CustomInputField(
                         controller: viewModel.timeController,
-                        labelText: 'Time',
+                        labelText: 'Time', //choose time
                         keyboardType: TextInputType.datetime,
                         inputFormatters: [],
                         onTap: () async {
@@ -278,6 +285,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               );
                             },
                           );
+                          //selected time will be stored in controller
                           if (pickedTime != null) {
                             viewModel.timeController.text = pickedTime.format(context);
                           }
@@ -286,7 +294,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       SizedBox(height: 10),
                       // Description input
                       CustomInputField(
-                        controller: viewModel.descriptionController,
+                        controller: viewModel.descriptionController,  //enter description
                         labelText: 'Description',
                         inputFormatters: [],
                       ),
@@ -300,18 +308,18 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         child: ElevatedButton(
                           onPressed: () async {
                             final pickedFile = await ImagePicker().pickImage(
-                              source: ImageSource.gallery,
+                              source: ImageSource.gallery,  //if tested in mobile
                             );
                             if (pickedFile != null) {
                               setState(() {
                                 viewModel.receiptImage = File(
-                                    pickedFile.path); // Update receiptImage
+                                    pickedFile.path);  //if tested in web browser
                               });
                               viewModel.convertImageToBase64(
-                                  pickedFile); // Convert and set base64
+                                  pickedFile); // convert and set as base64 string
                             }
                           },
-                          child: Text('Upload Receipt'),
+                          child: Text('Upload Receipt'),  //allow user to upload receipt image
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             elevation: 0,
@@ -335,13 +343,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         ),
                         child: viewModel.receiptImage != null
                             ? kIsWeb
-                                ? Image.network(
+                                ? Image.network(   //if tested in web browser
                                     viewModel.receiptImage!.path,
                                     height: 100,
                                     width: 100,
                                     fit: BoxFit.cover,
                                   )
-                                : Image.file(
+                                : Image.file(   //if tested in mobile
                                     viewModel.receiptImage!,
                                     height: 100,
                                     width: 100,
@@ -361,7 +369,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                       viewModel.receiptImage = null;
                                     });
                                   },
-                                  icon: Icon(Icons.delete),
+                                  icon: Icon(Icons.delete), //icon to delete selected image
                                   color: Colors.black,
                                 ),
                                 // Button to view the picture
@@ -441,7 +449,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                       },
                                     );
                                   },
-                                  icon: Icon(Icons.image_search),
+                                  icon: Icon(Icons.image_search), //icon to view, zoom + and - of the picture
                                   color: Colors.black,
                                 )
                               ],
@@ -468,7 +476,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                     elevation: 0,
                                   ),
                                   child: Text(
-                                    'CANCEL',
+                                    'CANCEL',  //button to cancel creation of expenses
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
@@ -491,14 +499,17 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                   onPressed: () {
                                     if (_formKey.currentState?.validate() ??
                                         false) {
+                                      //call the function to insert new expenses into database
                                       viewModel.addExpense(
                                           widget.onExpenseAdded,
                                           widget.username,
                                           context);
+                                      //store in history collection to display in Transaction History Page
                                       String specificText =
                                           "Expenses: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
                                       historyViewModel.addHistory(specificText,
                                           widget.username, context);
+                                      //message
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
@@ -519,7 +530,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                     elevation: 0,
                                   ),
                                   child: Text(
-                                    'ADD',
+                                    'ADD',  //button to add new expenses
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
@@ -539,6 +550,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

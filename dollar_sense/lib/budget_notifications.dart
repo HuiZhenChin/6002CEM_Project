@@ -8,6 +8,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to set budget notifications
 class BudgetNotificationsPage extends StatefulWidget {
   final String username;
   final Function(BudgetNotifications) onBudgetNotificationsAdded;
@@ -25,8 +26,8 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
   String _secondReminderOption = 'None';
   List<String> _budgetCategories = [];
   bool _isLoading = true;
-  final List<String> _reminderTypes = ['Custom', 'Basic'];
-  final List<String> _secondReminderOptions = ['None', 'Budget Exceeded'];
+  final List<String> _reminderTypes = ['Custom', 'Basic'];  //two types of reminders
+  final List<String> _secondReminderOptions = ['None', 'Budget Exceeded']; //two types of 2nd reminder options
   String selectedCategory = "";
   final viewModel = BudgetNotificationsViewModel();
   final navigationBarViewModel= NavigationBarViewModel();
@@ -35,7 +36,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
   @override
   void initState() {
     super.initState();
-    _fetchBudgetCategories();
+    _fetchBudgetCategories();  //fetch the budget category when page loads
 
   }
 
@@ -46,6 +47,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
           .where('username', isEqualTo: widget.username)
           .get();
 
+      //fetch if any existing budget categories
       if (userSnapshot.docs.isNotEmpty) {
         String userId = userSnapshot.docs.first.id;
         Map<String, dynamic>? userData =
@@ -69,6 +71,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
     }
   }
 
+  //pop-up dialog to choose budget category
   void _showCategoryDialog() async {
     if (_budgetCategories.isEmpty) {
       await _fetchBudgetCategories();
@@ -101,6 +104,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
     );
   }
 
+  //text field validation
   String? _validateField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName cannot be empty';
@@ -109,6 +113,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
     return null;
   }
 
+  //pop-up dialog to select reminder type
   Future<void> _showReminderTypeDialog() async {
     await showDialog(
       context: context,
@@ -127,12 +132,14 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                     setState(() {
                       _selectedReminderType = _reminderTypes[index];
                       if (_selectedReminderType == 'Basic') {
-                        // Update text fields for Basic reminder type
+                        //update text fields for Basic reminder type
+                        //when user choose 'Basic', the 1st reminder is 10% and 2nd reminder is 'Budget Exceeded'
+                        //auto filled
                         viewModel.reminderTypeController.text = "Basic";
                         viewModel.firstReminderController.text = "10%";
                         viewModel.secondReminderController.text = 'Budget Exceeded';
                       } else {
-                        // Update text fields for Custom reminder type
+                        //update text fields for Custom reminder type
                         viewModel.reminderTypeController.text = "Custom";
                         viewModel.firstReminderController.text = "";
                         viewModel.secondReminderController.text = '';
@@ -149,6 +156,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
     );
   }
 
+  //pop-up dialog to select the first reminder (remaining budget %)
   void _showFirstReminderDialog() async {
     await showDialog(
       context: context,
@@ -180,6 +188,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
     );
   }
 
+  //pop-up dialog to choose second reminder
   void _showSecondReminderDialog() async {
     await showDialog(
       context: context,
@@ -253,6 +262,8 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                         controller: viewModel.firstReminderController,
                         labelText: '1st Reminder',
                         inputFormatters: [],
+                        //when user choose 'Basic', disable first reminder dialog box
+                        //only enabled when it is 'Custom'
                         onTap: _selectedReminderType == 'Basic' ? null : _showFirstReminderDialog,
                         readOnly: _selectedReminderType == 'Basic',
                         validator: (value) => _validateField(value, '1st Reminder'),
@@ -262,6 +273,8 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                         controller: viewModel.secondReminderController,
                         labelText: '2nd Reminder',
                         inputFormatters: [],
+                        //when user choose 'Basic', disable second reminder dialog box
+                        //only enabled when it is 'Custom'
                         onTap: _selectedReminderType == 'Basic' ? null : _showSecondReminderDialog,
                         readOnly: _selectedReminderType == 'Basic',
                         validator: (value) => _validateField(value, '2nd Reminder'),
@@ -308,7 +321,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
                                 child: ElevatedButton(
                                   onPressed: () async {
                                       if (_formKey.currentState!.validate()) {
-                                        // Check if category already exists
+                                        //check if category already exists
                                         bool categoryExists = await viewModel
                                             .checkCategoryExists(
                                             widget.username,
@@ -358,6 +371,7 @@ class _BudgetNotificationsPageState extends State<BudgetNotificationsPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

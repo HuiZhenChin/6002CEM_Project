@@ -11,9 +11,10 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//create new budget page
 class BudgetPage extends StatefulWidget {
   final String username;
-  final Function(Budget) onBudgetAdded;
+  final Function(Budget) onBudgetAdded;  //callback to get the budget added
 
   const BudgetPage({required this.username, required this.onBudgetAdded});
 
@@ -26,18 +27,18 @@ class _BudgetPageState extends State<BudgetPage> {
   List<String> _budgetCategories = [];
   bool _isLoading = true;
   String selectedCategory = "";
-  final viewModel = BudgetViewModel();
+  final viewModel = BudgetViewModel(); //budget view model
   final historyViewModel = TransactionHistoryViewModel();
-  final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
   @override
   void initState() {
     super.initState();
-    _fetchBudgetCategories();
+    _fetchBudgetCategories(); //fetch the created budget categories in the Add Category Page
 
   }
 
+ //fetch a list of budget categories
   Future<void> _fetchBudgetCategories() async {
     try {
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -57,6 +58,7 @@ class _BudgetPageState extends State<BudgetPage> {
           _isLoading = false;
         });
 
+        //if no budget category is created
         if (_budgetCategories.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -84,6 +86,7 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
+  //show the pop-up dialog for user selection purpose
   void showCategoryDialog() async {
     await _fetchBudgetCategories();
     String selectedCategory = viewModel.categoryController.text;
@@ -116,19 +119,19 @@ class _BudgetPageState extends State<BudgetPage> {
               actions: [
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop(); // close the dialog
                   },
                   child: Text('Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Update the category only if it's different from the original
+                    // update the category only if it is different from the original
                     if (selectedCategory != viewModel.categoryController.text) {
                       setState(() {
                         viewModel.categoryController.text = selectedCategory;
                       });
                     }
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop(); // close the dialog
                   },
                   child: Text('OK'),
                 ),
@@ -140,6 +143,7 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
+  //category selection validation, must select a category
   String? _validateCategory(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please select a category';
@@ -147,6 +151,7 @@ class _BudgetPageState extends State<BudgetPage> {
     return null;
   }
 
+  //budget amount validation
   String? _validateAmount(String? value) {
     if (value == null || value.isEmpty) {
       return 'Amount cannot be empty';
@@ -161,6 +166,7 @@ class _BudgetPageState extends State<BudgetPage> {
     return null;
   }
 
+  //pop-up dialog for month and year selection
   Future<void> _pickMonthAndYear(BuildContext context) async {
       int? selectedYear;
       String? selectedMonth;
@@ -343,6 +349,8 @@ class _BudgetPageState extends State<BudgetPage> {
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     if (_formKey.currentState?.validate() ?? false) {
+                                      //check whether the created budget for that particular month and year already exists,
+                                      //if yes block it, if no proceed
                                       bool exists = await viewModel
                                           .checkExists(
                                           widget.username,
@@ -354,9 +362,12 @@ class _BudgetPageState extends State<BudgetPage> {
                                         );
                                         return;
                                       } else {
+                                        //if no budget category created for that specific month and year, insert the budget into database
                                         await viewModel.addBudget(
                                             widget.onBudgetAdded,
                                             widget.username, context);
+
+                                        //insert activity into history collection at the same time
                                         String specificText = "Add Budget: ${viewModel.categoryController.text} with ${viewModel.amountController.text}";
                                         await historyViewModel.addHistory(
                                             specificText, widget.username, context);
@@ -391,6 +402,7 @@ class _BudgetPageState extends State<BudgetPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//customized 4 cards in the Home Page for budget, income, invest and expenses
 class HomePageCard extends StatelessWidget {
   final String title;
   final String amount;
@@ -31,7 +32,7 @@ class HomePageCard extends StatelessWidget {
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: onIconPressed, // Attach the onIconPressed callback to the icon
+                        onTap: onIconPressed,
                         child: Icon(
                           icon,
                           color: Colors.white,

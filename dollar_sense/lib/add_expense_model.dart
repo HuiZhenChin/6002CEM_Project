@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//expense class model
 class Expense {
   final String id;
   String title;
@@ -10,8 +11,8 @@ class Expense {
   String description;
   String date;
   String time;
-  File? receiptImage;
-  String imageBase64;
+  File? receiptImage; //image url
+  String imageBase64;  //base64 string (image)
 
   Expense({
     required this.id,
@@ -27,6 +28,7 @@ class Expense {
 
   });
 
+  //map the Firestore document fields to Expense attributes
   factory Expense.fromDocument(DocumentSnapshot doc) {
     return Expense(
       id: doc['id'],
@@ -42,6 +44,7 @@ class Expense {
   }
 
 
+  //map changes
   Map<String, dynamic> toMap() {
     return {
       'id': id,

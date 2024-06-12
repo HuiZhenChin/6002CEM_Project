@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//budget notifications class
 class BudgetNotifications{
   final String id;
   String category;
@@ -26,6 +27,7 @@ class BudgetNotifications{
     );
   }
 
+  //map changes
   Map<String, dynamic> toMap() {
     return {
       'budgetNotifications_id': id,

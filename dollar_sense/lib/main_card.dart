@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//customized main card design in the Home Page (display Current Net Worth)
 class MainCard extends StatelessWidget {
   final String title;
   final String amount;

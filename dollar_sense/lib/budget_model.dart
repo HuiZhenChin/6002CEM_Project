@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//budget class
 class Budget {
   final String id;
   String category;
@@ -16,6 +17,7 @@ class Budget {
 
   });
 
+  //map the Firestore document fields to Budget attributes
   factory Budget.fromDocument(DocumentSnapshot doc) {
     return Budget(
       id: doc['budget_id'],
@@ -26,6 +28,7 @@ class Budget {
     );
   }
 
+  //map changes to database
   Map<String, dynamic> toMap() {
     return {
       'budget_id': id,
