@@ -27,6 +27,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
   late TextEditingController convertedAmountController;  //control the converted amount
   final viewModel = CurrencyConverterViewModel();
   int _bottomNavIndex = 0;  //navigation bar position index
+  Map<String, String> currencyToCountry = {}; //map to store currency to country data
 
   @override
   void initState() {
@@ -91,12 +92,42 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
       if (response.statusCode == 200) {
         setState(() {
           currencyData = json.decode(response.body);
+          fetchCountryDataForAllCurrencies();
         });
       } else {
         throw Exception('Failed to load currency data');
       }
     } catch (e) {
       print(e);
+    }
+  }
+
+  //function to fetch country data for all currencies
+  Future<void> fetchCountryDataForAllCurrencies() async {
+    if (currencyData != null) {
+      for (String currency in currencyData!['conversion_rates'].keys) {
+        await fetchCountryData(currency);
+      }
+      setState(() {}); //update the UI after fetching all country data
+    }
+  }
+
+  //function to fetch country data from RestCountries API
+  Future<void> fetchCountryData(String currencyCode) async {
+    try {
+      final response = await http.get(Uri.parse('https://restcountries.com/v3.1/currency/$currencyCode'));
+      if (response.statusCode == 200) {
+        var countryData = json.decode(response.body);
+        if (countryData != null && countryData.isNotEmpty) {
+          setState(() {
+            currencyToCountry[currencyCode] = countryData[0]['name']['common'];
+          });
+        }
+      } else {
+        throw Exception('Failed to load country data');
+      }
+    } catch (e) {
+      print('Error fetching country data: $e');
     }
   }
 
@@ -260,8 +291,11 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         'expense_amount': convertedExpense
       });
     }
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes
   }
 
   @override
@@ -272,7 +306,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         title: Text('Currency Converter'),
       ),
       body: Container(
-        color: Color(0xFFEEF4F8), // Background color for the entire page
+        color: Color(0xFFEEF4F8),
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,12 +332,13 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
                       .elementAt(index);
                   double rate =
                   currencyData!['conversion_rates'][currency];
+                  String country = currencyToCountry[currency] ?? 'Unknown';
                   return Container(
                     color: currency == baseCurrency
                         ? Color(0xFF78A3CB)
                         : Color(0xFFB3CDE4).withOpacity(0.7),
                     child: ListTile(
-                      title: Text(currency),
+                      title: Text('$currency - $country'),
                       trailing: Text(rate.toStringAsFixed(2)),
                     ),
                   );
