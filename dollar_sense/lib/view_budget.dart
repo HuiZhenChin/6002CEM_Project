@@ -11,8 +11,8 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 import 'transaction_history_view_model.dart';
-import 'budget_notifications_model.dart';
 
+//page to view list of budgets and its notifications settings
 class ViewBudgetPage extends StatefulWidget {
   final String username;
 
@@ -25,13 +25,14 @@ class ViewBudgetPage extends StatefulWidget {
 class _ViewBudgetPageState extends State<ViewBudgetPage> {
   int currentIndex = 0;
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
   List<Budget> budgets = [];
   Map<String, bool> categoryNotifications = {};
 
   final viewModel = BudgetViewModel();
   final historyViewModel = TransactionHistoryViewModel();
-  List<BudgetNotifications> budgetNotificationsList = [];
+  List<BudgetNotifications> budgetNotificationsList = []; //list for budget notifications
+  //list for those category that have set notifications but does not have a budget yet
   List<String> categoriesWithNotificationsButNoBudget = [];
 
   @override
@@ -40,7 +41,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
 
     categoriesWithNotificationsButNoBudget = [];
 
-    // Fetch and initialize budget and notifications data
+    //fetch and initialize budget and notifications data
     _fetchBudget().then((fetchedBudgets) async {
       setState(() {
         budgets = fetchedBudgets;
@@ -55,14 +56,14 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
         }
       }
 
-      // Populate categoryNotifications map
+      //populate categoryNotifications map
       setState(() {
         for (var notification in budgetNotificationsList) {
           categoryNotifications[notification.category] = true;
         }
       });
 
-      // Fetch categories with notifications but no budget
+      //fetch categories with notifications but no budget
       var categoriesWithoutBudget = await _fetchCategoriesWithNotificationsButNoBudget();
       setState(() {
         categoriesWithNotificationsButNoBudget = categoriesWithoutBudget;
@@ -70,6 +71,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     });
   }
 
+  //fetch all the budgets
   Future<List<Budget>> _fetchBudget() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -94,6 +96,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     }
   }
 
+  //fetch all budget notifications
   Future<BudgetNotifications?> _fetchNotificationsForBudget(Budget budget) async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -120,7 +123,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
   }
 
 
-
+  //update changes for budget
   void _updateBudget(Budget editedBudget) {
     setState(() {
       int index = budgets.indexWhere((budget) => budget.id == editedBudget.id);
@@ -130,6 +133,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     });
   }
 
+  //edit budget (direct to the Edit Budget Page)
   void _editBudget(Budget budget) async {
     String documentId = await _getDocumentId(budget);
     Budget editedBudget = await Navigator.push(
@@ -150,7 +154,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     }
   }
 
-
+  //get document ID for each budget
   Future<String> _getDocumentId(Budget budget) async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -175,33 +179,71 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     return '';
   }
 
+  //delete budget
   Future<void> _deleteBudget(Budget budget) async {
-    String username = widget.username;
-    String documentId = await _getDocumentId(budget);
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      await FirebaseFirestore.instance
+    bool? confirmDelete = await _showConfirmationDialog(context, 'delete', budget);
+    if (confirmDelete == true) {
+      String username = widget.username;
+      String documentId = await _getDocumentId(budget);
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
-          .doc(userId)
-          .collection('budget')
-          .doc(documentId)
-          .delete();
+          .where('username', isEqualTo: username)
+          .get();
 
-      setState(() {
-        budgets.removeWhere((element) => element.id == budget.id);
-      });
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('budget')
+            .doc(documentId)
+            .delete();
 
-      String specificText = "Delete Budget: ${budget.category} with ${budget
-          .amount}";
-      await historyViewModel.addHistory(specificText, widget.username, context);
+        //remove from lists
+        setState(() {
+          budgets.removeWhere((element) => element.id == budget.id);
+        });
+
+        //add records to history collection in the database
+        String specificText = "Delete Budget: ${budget.category} with ${budget.amount}";
+        await historyViewModel.addHistory(specificText, widget.username, context);
+      }
     }
   }
 
+  //show delete confirmation
+  Future<bool?> _showConfirmationDialog(BuildContext context, String action, dynamic item) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text('Confirm $action'),
+          content: Text('Are you sure you want to $action this ${item.runtimeType.toString().toLowerCase()}?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //fetch expense categories
   Future<Map<String, double>> _fetchExpenseCategories() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -234,11 +276,13 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     }
   }
 
+  //handle budgets that have newly added with notifications
   void handleBudgetNotificationsAdded(
       BudgetNotifications newBudgetNotifications) {
     print('New budget notifications added: $newBudgetNotifications');
   }
 
+  //update changes for budget notifications
   void _updateBudgetNotifications(
       BudgetNotifications editedBudgetNotifications) {
     setState(() {
@@ -250,7 +294,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     });
   }
 
-
+  //get the budget notifications document Id
   Future<String> _getNotificationsDocumentId(
       BudgetNotifications budgetNotifications) async {
     String username = widget.username;
@@ -277,48 +321,51 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     return '';
   }
 
+  //delete budget notifications
   Future<void> _deleteBudgetNotifications(
       BudgetNotifications budgetNotifications) async {
-    String username = widget.username;
-    String documentId = await _getNotificationsDocumentId(budgetNotifications);
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      await FirebaseFirestore.instance
+      String username = widget.username;
+      String documentId = await _getNotificationsDocumentId(budgetNotifications);
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
-          .doc(userId)
-          .collection('budgetNotifications')
-          .doc(documentId)
-          .delete();
+          .where('username', isEqualTo: username)
+          .get();
 
-      setState(() {
-        budgetNotificationsList.removeWhere((element) =>
-        element.id == budgetNotifications.id);
-      });
-    }
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('budgetNotifications')
+            .doc(documentId)
+            .delete();
+
+        setState(() {
+          budgetNotificationsList.removeWhere((element) =>
+          element.id == budgetNotifications.id);
+        });
+      }
   }
 
+  //refresh the page to get the latest changes
   void refreshData() async {
     for (var budget in budgets) {
       BudgetNotifications? notifications = await _fetchNotificationsForBudget(budget);
       if (notifications != null) {
         setState(() {
-          // Update the notifications for the given budget
+          //update the notifications for the given budget
           categoryNotifications[budget.category] = true;
         });
       } else {
         setState(() {
-          // Remove the notifications for the given budget if there are none
+          //remove the notifications for the given budget if there are none
           categoryNotifications.remove(budget.category);
         });
       }
     }
   }
 
+  //fetch categories that have notifications but without a budget created
   Future<List<String>> _fetchCategoriesWithNotificationsButNoBudget() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -329,7 +376,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
 
-      // Fetch budget categories
+      //fetch budget categories
       QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
@@ -340,7 +387,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           .map((doc) => doc['budget_category'] as String)
           .toSet();
 
-      // Fetch budget notification categories
+      //fetch budget notification categories
       QuerySnapshot notificationsSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
@@ -352,7 +399,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           .map((doc) => doc['budgetNotifications_category'] as String)
           .toSet();
 
-      // Categories that have notifications but no budget
+      //categories that have notifications but no budget
       notificationCategories.removeAll(budgetCategories);
 
       return notificationCategories.toList();
@@ -366,7 +413,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF988E82),
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('View Budget'),
         actions: [
           IconButton(
@@ -379,15 +426,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF988E82),
-              Color(0xFFDED2C4),
-              Color(0xFFD5C2B0),
-            ],
-          ),
+          color: Color(0xFFEEF4F8),
         ),
         child: ListView(
           children: [
@@ -401,7 +440,11 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 } else if (budgetSnapshot.data == null ||
                     budgetSnapshot.data!.isEmpty) {
                   return Center(
-                    child: Text('No budget found.'),
+                    child: Text(
+                      //if no budget found
+                      'No budgets found',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
                   );
                 } else {
                   return Column(
@@ -413,6 +456,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
+                              //display the list of budget categories
                               'Budget Categories',
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
@@ -455,6 +499,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 } else if (expenseSnapshot.data == null ||
                     expenseSnapshot.data!.isEmpty) {
                   return Center(
+                    //if no expense category found
                     child: Text('No expenses found.'),
                   );
                 } else {
@@ -464,6 +509,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                       Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
+                          //display the list of expenses categories
                           'Expense Categories',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
@@ -479,6 +525,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
@@ -488,7 +535,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     );
   }
 
-  // Helper method to build the category list for expenses
+  //helper method to build the category list for expenses
   Widget _buildCategoryList(Map<String, double> categories, String type) {
     return ListView.builder(
       shrinkWrap: true,
@@ -506,13 +553,15 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           child: ListTile(
             title: Text(category),
             subtitle: Text(
-                'Total Amount: RM${totalAmount?.toStringAsFixed(2) ?? 'N/A'}'),
+              //show the total amount spent by each expense category
+                'Total Amount: ${totalAmount?.toStringAsFixed(2) ?? 'N/A'}'),
           ),
         );
       },
     );
   }
 
+  //listview building for budget
   Widget _buildBudgetList(List<Budget> budgets) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,7 +591,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                           if (hasNotification)
                             Icon(
                               Icons.notifications,
-                              color: Colors.red,
+                              color: Color(0xffd3746c),
                               size: 16.0,
                             ),
                         ],
@@ -553,7 +602,8 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                       ),
                     ],
                   ),
-                  subtitle: Text('Amount: RM${budget.amount.toStringAsFixed(2)}'),
+                  //show the amount planned to achieve
+                  subtitle: Text('Amount: ${budget.amount.toStringAsFixed(2)}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -581,24 +631,26 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
+            //display the text for those categories that have notifications but without a budget
             'Categories with notifications but no budget: ${categoriesWithNotificationsButNoBudget.join(', ')}',
-            style: TextStyle(fontSize: 16, color: Colors.red),
+            style: TextStyle(fontSize: 16, color: Color(0xffd3746c)),
           ),
         ),
       ],
     );
   }
 
+  //onTap to edit or delete the budget notifications for the specific budget category
   void _handleBudgetCategoryTap(BuildContext context, Budget budget) async {
     BudgetNotifications? budgetNotifications = await _fetchNotificationsForBudget(budget);
     if (budgetNotifications != null) {
       String documentId = await _getNotificationsDocumentId(budgetNotifications);
 
-      // Show a dialog or navigate to another page to handle edit/delete options
       showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
+            backgroundColor: Colors.white,
             title: Text('Budget Category Options'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -606,14 +658,14 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 ListTile(
                   title: Text('Modify Notifications'),
                   onTap: () {
-                    // Navigate to modify notifications page
+                    //navigate to modify notifications page
                     _navigateToModifyNotificationsPage(context, budgetNotifications, documentId);
                   },
                 ),
                 ListTile(
                   title: Text('Delete Notifications'),
                   onTap: () {
-                    // Delete notifications logic here
+                    //delete notifications
                     _deleteNotifications(budgetNotifications);
                     Navigator.pop(context); // Close the dialog
                   },
@@ -626,7 +678,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     }
   }
 
-
+  //edit budget notifications (page direct)
   void _navigateToModifyNotificationsPage(BuildContext context, BudgetNotifications budgetNotifications, String documentId) {
     // Navigate to modify notifications page
     Navigator.push(
@@ -642,7 +694,7 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     );
   }
 
-
+  //delete notifications
   void _deleteNotifications(BudgetNotifications budgetNotifications) {
    _deleteBudgetNotifications(budgetNotifications);
   }

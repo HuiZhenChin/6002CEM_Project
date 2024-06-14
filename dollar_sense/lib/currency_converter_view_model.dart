@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'currency_converter_model.dart';
 
+//currency view model
 class CurrencyConverterViewModel {
   final TextEditingController codeController = TextEditingController();
   final TextEditingController rateController= TextEditingController();
@@ -9,12 +10,10 @@ class CurrencyConverterViewModel {
   Future<void> addCurrency(String username, Function(Currency) onCurrencyAdded, BuildContext context) async {
     String code = codeController.text;
     double rate = double.tryParse(rateController.text) ?? 0.0;
-    bool converted = false;
 
     Currency newCurrency = Currency(
       code: code,
       rate: rate,
-      converted: converted,
     );
 
     onCurrencyAdded(newCurrency);
@@ -43,14 +42,12 @@ class CurrencyConverterViewModel {
         await currencyCollection.doc(currencyDocId).update({
           'code': currency.code,
           'rate': currency.rate,
-          'converted': currency.converted,
           'timestamp': FieldValue.serverTimestamp(),
         });
       } else {
         await currencyCollection.add({
           'code': currency.code,
           'rate': currency.rate,
-          'converted': currency.converted,
           'timestamp': FieldValue.serverTimestamp(),
         });
       }

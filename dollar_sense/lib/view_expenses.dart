@@ -11,6 +11,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to view the list of expenses created
 class ViewExpensesPage extends StatefulWidget {
   final String username;
 
@@ -26,14 +27,16 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
   final viewModel= AddExpenseViewModel();
   final historyViewModel= TransactionHistoryViewModel();
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
+  String _currentFilter = 'None';
+  bool _isFiltered = false;  //for filtering purpose
 
 
   @override
   void initState() {
     super.initState();
-    _loadDefaultImage();
-    _fetchExpenses();
+    _loadDefaultImage();  //load the default image for those expenses which do not have a receipt image uploaded
+    _fetchExpenses(); //fetch the list of expenses
 
   }
 
@@ -42,17 +45,14 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     _defaultImageBase64 = await loadDefaultImageAsBase64();
   }
 
+  //load base64 string of the default image
   Future<String> loadDefaultImageAsBase64() async {
     final ByteData bytes = await rootBundle.load('assets/expenses.png');
     final Uint8List list = bytes.buffer.asUint8List();
     return base64Encode(list);
   }
 
-  deleteToDoTask(Expense expense) {
-    expenses.removeWhere((element) => element.id == expense.id);
-    setState(() {});
-  }
-
+  //delete expenses
   Future<void> _deleteExpense(Expense expense) async {
     bool? confirmed = await _showConfirmationDialog(context, 'delete', expense);
     if (confirmed != true) {
@@ -78,6 +78,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
         expenses.removeWhere((element) => element.id == expense.id);
       });
 
+      //add to history records
       String specificText = "Delete Expenses: ${expense.title} ";
       await historyViewModel.addHistory(specificText, widget.username, context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +90,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
   }
 
 
+  //fetch the list of expenses created
   Future<List<Expense>> _fetchExpenses() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -129,7 +131,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     }
   }
 
-
+  //get document Id of the edited expenses
   Future<String> _getDocumentId(Expense expense) async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -154,23 +156,30 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     return '';
   }
 
-
+  //show delete confirmation dialog
   Future<bool?> _showConfirmationDialog(BuildContext context, String action, Expense expense) {
     return showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: Text('Confirm $action'),
           content: Text('Are you sure you want to $action this expense?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
               child: Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true); // Close the dialog and confirm
+                Navigator.of(context).pop(true);
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
               child: Text('Confirm'),
             ),
           ],
@@ -179,6 +188,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     );
   }
 
+  //update the changes
   void _updateExpense(Expense editedExpense) {
     setState(() {
       int index = expenses.indexWhere((expense) =>
@@ -189,6 +199,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     });
   }
 
+  //edit expenses
   void _editExpense(Expense expense) async {
     String documentId = await _getDocumentId(expense);
 
@@ -210,6 +221,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     }
   }
 
+  //preview the image uploaded in the list
   Widget _buildExpenseImage(Expense expense) {
     if (expense.receiptImage != null || expense.imageBase64 != null) {
       return GestureDetector(
@@ -265,6 +277,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     }
   }
 
+  //get the uploaded image
   Widget _getImageWidget(Expense expense) {
     if (expense.receiptImage != null) {
       if (kIsWeb) {
@@ -301,24 +314,109 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
     }
   }
 
+  //filter the expenses list
+  List<Expense> _filterExpenses(List<Expense> expenses) {
+    switch (_currentFilter) {
+      case 'Title':
+        expenses.sort((a, b) => a.title.compareTo(b.title));
+        break;
+      case 'Title (Z-A)':
+        expenses.sort((a, b) => b.title.compareTo(a.title));
+        break;
+      case 'Amount (High to Low)':
+        expenses.sort((a, b) => b.amount.compareTo(a.amount));
+        break;
+      case 'Amount (Low to High)':
+        expenses.sort((a, b) => a.amount.compareTo(b.amount));
+        break;
+      case 'Category (A-Z)':
+        expenses.sort((a, b) => a.category.compareTo(b.category));
+        break;
+      case 'Category (Z-A)':
+        expenses.sort((a, b) => b.category.compareTo(a.category));
+        break;
+      default:
+        break;
+    }
+    return expenses;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF988E82),
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('View Expenses'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.filter_list),
+            onPressed: () async {
+              String? result = await showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return SimpleDialog(
+                    backgroundColor: Colors.white,
+                    title: Text('Filter Options'),
+                    children: [
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'Title');
+                        },
+                        child: Text('Title (A-Z)'),
+                      ),
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'Title (Z-A)');
+                        },
+                        child: Text('Title (Z-A)'),
+                      ),
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'Amount (High to Low)');
+                        },
+                        child: Text('Amount (High to Low)'),
+                      ),
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'Amount (Low to High)');
+                        },
+                        child: Text('Amount (Low to High)'),
+                      ),
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'Category (A-Z)');
+                        },
+                        child: Text('Category (A-Z)'),
+                      ),
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'Category (Z-A)');
+                        },
+                        child: Text('Category (A-Z)'),
+                      ),
+                      SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.pop(context, 'None');
+                        },
+                        child: Text('Remove Filter'),
+                      ),
+                    ],
+                  );
+                },
+              );
+              if (result != null) {
+                setState(() {
+                  _currentFilter = result;
+                  _isFiltered = _currentFilter != 'None';
+                });
+              }
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF988E82),
-              Color(0xFFDED2C4),
-              Color(0xFFD5C2B0),
-            ],
-          ),
+          color: Color(0xFFEEF4F8),
         ),
         child: FutureBuilder<List<Expense>>(
           future: _fetchExpenses(),
@@ -333,20 +431,26 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
               );
             } else if (snapshot.data!.isEmpty) {
               return Center(
-                child: Text('No expenses found.'),
+                child: Text(
+                  'No expenses found',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
               );
             } else {
+              List<Expense> filteredExpenses = _isFiltered
+                  ? _filterExpenses(snapshot.data!)
+                  : snapshot.data!;
               return ListView.builder(
-                itemCount: snapshot.data!.length,
+                itemCount: filteredExpenses.length,
                 itemBuilder: (context, index) {
-                  final expense = snapshot.data![index];
-                  final isOdd = index % 2 == 0; // Check if the index is odd
+                  final expense = filteredExpenses[index];
+                  final isOdd = index % 2 == 0; //check if the index is odd
 
                   return Container(
                     color: isOdd
                         ? Colors.grey[200]!.withOpacity(0.8)
                         : Colors.white.withOpacity(
-                        0.8), // Set background color based on index
+                        0.8), //set background color based on index
                     child: ListTile(
                       leading: _buildExpenseImage(expense),
                       title: Row(
@@ -359,19 +463,21 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
                           ),
                         ],
                       ),
-                      subtitle: Text('Amount: \RM${expense.amount}'),
+                      subtitle: Text('Amount: \ ${expense.amount}'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: Icon(Icons.edit),
                             onPressed: () {
+                              //edit expenses
                               _editExpense(expense);
                             },
                           ),
                           IconButton(
                             icon: Icon(Icons.delete),
                             onPressed: () {
+                              //delete expenses
                               _deleteExpense(expense);
                             },
                           ),
@@ -382,7 +488,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
-                              backgroundColor: Color(0xFFE3CCB2),
+                              backgroundColor: Color(0xffa5b4c2),
                               title: Text('Expense Details'),
                               content: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,7 +518,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
                                 TextButton(
                                   onPressed: () {
                                     Navigator.of(context)
-                                        .pop(); // Close the dialog
+                                        .pop();
                                   },
                                   child: Text('Close'),
                                 ),
@@ -429,6 +535,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
           },
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

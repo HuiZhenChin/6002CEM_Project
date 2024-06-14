@@ -1,15 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'my_account.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'my_account.dart';
 import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
 class EditAccount extends StatefulWidget {
+
   final String username;
 
   EditAccount({required this.username});
@@ -20,43 +18,16 @@ class EditAccount extends StatefulWidget {
 
 class _EditAccountState extends State<EditAccount> {
   File? _image;
-  String _imageUrl = '';
   final _formKey = GlobalKey<FormState>();
-  String _fetchedEmail = ''; // Initialize with an empty string
   late String _username;
   String _password = '';
   String _confirmPassword = '';
-  final navigationBarViewModel = NavigationBarViewModel();
+  final navigationBarViewModel= NavigationBarViewModel();
   int _bottomNavIndex = 3;
 
   @override
   void initState() {
     super.initState();
-    _fetchEmail();
-  }
-
-  Future<void> _fetchEmail() async {
-    String username = widget.username;
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('dollar_sense')
-          .doc(userId)
-          .get();
-
-      if (userDoc.exists) {
-        String email = userDoc['email'] ?? '';
-        setState(() {
-          _fetchedEmail = email;
-        });
-      }
-    }
   }
 
   Future<void> _pickImage() async {
@@ -64,40 +35,15 @@ class _EditAccountState extends State<EditAccount> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      File imageFile = File(pickedFile.path);
-
-      String fileName = 'avatars/${widget.username}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference storageReference = FirebaseStorage.instance.ref().child(fileName);
-      UploadTask uploadTask = storageReference.putFile(imageFile);
-
-      TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
-      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
-
       setState(() {
-        _image = imageFile;
-        _imageUrl = downloadUrl;
+        _image = File(pickedFile.path);
       });
-
-      String username = widget.username;
-      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-          .collection('dollar_sense')
-          .where('username', isEqualTo: username)
-          .get();
-
-      if (userSnapshot.docs.isNotEmpty) {
-        String userId = userSnapshot.docs.first.id;
-        await FirebaseFirestore.instance
-            .collection('dollar_sense')
-            .doc(userId)
-            .update({'imageUrl': downloadUrl});
-      }
     }
   }
 
-  Future<void> _updateAccount() async {
+  bool _saveForm() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-
       if (_password != _confirmPassword) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -105,51 +51,18 @@ class _EditAccountState extends State<EditAccount> {
             backgroundColor: Colors.red,
           ),
         );
-        return;
+        return false;
       }
-
-      if (_password.length < 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Password should be at least 6 characters long'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      try {
-        String username = widget.username;
-        User currentUser = FirebaseAuth.instance.currentUser!;
-
-        // Update password in Firebase Authentication
-        await currentUser.updatePassword(_password);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Account updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MyAccount(username: widget.username),
-          ),
-        );
-      } catch (e) {
-        print(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update account: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Save the updated information to the backend or local storage
+      // For now, just print the updated information to the console
+      print('Username: $_username');
+      print('Avatar: ${_image?.path}');
+      print('Password: $_password');
+      // Return true to indicate the form is saved successfully
+      return true;
     }
+    return false;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -201,25 +114,25 @@ class _EditAccountState extends State<EditAccount> {
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                   borderSide: BorderSide(
-                    color: Colors.black,
+                    color: Colors.black, // Same as default border color
                     width: 1.0,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                   borderSide: BorderSide(
-                    color: Colors.black,
+                    color: Colors.black, // Same as focused border color
                     width: 2.0,
                   ),
                 ),
                 floatingLabelStyle: TextStyle(
-                  color: Colors.black,
+                  color: Colors.black, // Label color when focused
                 ),
                 labelStyle: TextStyle(
-                  color: Colors.black,
+                  color: Colors.black, // Label color when unfocused
                 ),
                 errorStyle: TextStyle(
-                  color: Colors.red,
+                  color: Colors.red, // Color of error message
                 ),
               ),
             ),
@@ -235,8 +148,6 @@ class _EditAccountState extends State<EditAccount> {
                           radius: 50,
                           backgroundImage: _image != null
                               ? FileImage(_image!)
-                              : _imageUrl.isNotEmpty
-                              ? NetworkImage(_imageUrl)
                               : AssetImage('assets/avatar.jpg')
                           as ImageProvider,
                         ),
@@ -262,7 +173,7 @@ class _EditAccountState extends State<EditAccount> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Email: $_fetchedEmail',
+                    'Email: ', // Replace with actual email
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.black,
@@ -271,7 +182,7 @@ class _EditAccountState extends State<EditAccount> {
                   ),
                   SizedBox(height: 16),
                   TextFormField(
-                    initialValue: '${widget.username}',
+                    initialValue: '${widget.username}', // Replace with the current username
                     decoration: InputDecoration(
                       labelText: 'Username',
                     ),
@@ -320,6 +231,7 @@ class _EditAccountState extends State<EditAccount> {
                       _confirmPassword = value;
                     },
                   ),
+
                   SizedBox(height: 24),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -327,7 +239,16 @@ class _EditAccountState extends State<EditAccount> {
                       backgroundColor: Colors.black,
                       minimumSize: Size(double.infinity, 50),
                     ),
-                    onPressed: _updateAccount,
+                    onPressed: () {
+                      if (_saveForm()) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyAccount(username: widget.username),
+                          ),
+                        );
+                      }
+                    },
                     child: Text('Save'),
                   ),
                 ],

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'budget_model.dart';
 
+//create new budget view model
 class BudgetViewModel {
   TextEditingController categoryController = TextEditingController();
   TextEditingController amountController = TextEditingController();
@@ -9,6 +10,7 @@ class BudgetViewModel {
   TextEditingController yearController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  //insert new budget to database
   Future<void> addBudget(Function(Budget) onBudgetAdded, String username, BuildContext context) async {
     String category = categoryController.text.trim();
     double amount = double.tryParse(amountController.text.trim()) ?? 0.0;
@@ -57,6 +59,7 @@ class BudgetViewModel {
     }
   }
 
+  //check whether the specific category for particular month and year already set a budget
   Future<bool> checkExists(String username, String category, String month, String year) async {
     try {
       QuerySnapshot userSnapshot = await _firestore
@@ -85,6 +88,7 @@ class BudgetViewModel {
     }
   }
 
+  //save changes to database
   Future<void> _saveBudgetToFirestore(Budget budget, String username, BuildContext context) async {
     try {
       QuerySnapshot userSnapshot = await _firestore

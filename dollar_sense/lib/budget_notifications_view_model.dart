@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'budget_notifications_model.dart';
 
+//budget notifications view model
 class BudgetNotificationsViewModel {
   TextEditingController categoryController = TextEditingController();
   TextEditingController reminderTypeController = TextEditingController();
@@ -9,6 +10,7 @@ class BudgetNotificationsViewModel {
   TextEditingController secondReminderController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  //insert budget notifications to database
   Future<void> addBudgetNotifications(Function(BudgetNotifications) onBudgetNotificationsAdded, String username, BuildContext context) async {
     String category = categoryController.text;
     String reminderType = reminderTypeController.text;
@@ -62,6 +64,7 @@ class BudgetNotificationsViewModel {
 
     }
 
+    //check whether that category has set notifications before
   Future<bool> checkCategoryExists(String username, String category) async {
     try {
       QuerySnapshot userSnapshot = await _firestore
@@ -88,6 +91,7 @@ class BudgetNotificationsViewModel {
     }
   }
 
+  //save changes to database
   Future<void> _saveBudgetNotificationsToFirestore(BudgetNotifications budgetNotifications, String username, BuildContext context) async {
     // Query Firestore to get the user ID from the username
     QuerySnapshot userSnapshot = await _firestore

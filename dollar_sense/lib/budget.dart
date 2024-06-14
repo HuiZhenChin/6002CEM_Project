@@ -11,9 +11,10 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//create new budget page
 class BudgetPage extends StatefulWidget {
   final String username;
-  final Function(Budget) onBudgetAdded;
+  final Function(Budget) onBudgetAdded;  //callback to get the budget added
 
   const BudgetPage({required this.username, required this.onBudgetAdded});
 
@@ -26,18 +27,18 @@ class _BudgetPageState extends State<BudgetPage> {
   List<String> _budgetCategories = [];
   bool _isLoading = true;
   String selectedCategory = "";
-  final viewModel = BudgetViewModel();
+  final viewModel = BudgetViewModel(); //budget view model
   final historyViewModel = TransactionHistoryViewModel();
-  final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
   @override
   void initState() {
     super.initState();
-    _fetchBudgetCategories();
+    _fetchBudgetCategories(); //fetch the created budget categories in the Add Category Page
 
   }
 
+ //fetch a list of budget categories
   Future<void> _fetchBudgetCategories() async {
     try {
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -56,20 +57,39 @@ class _BudgetPageState extends State<BudgetPage> {
               [];
           _isLoading = false;
         });
+
+        //if no budget category is created
+        if (_budgetCategories.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'No category created, you may create a category through "+" -> category',
+              ),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No category created')),
+          SnackBar(
+            content: Text(
+              'No category created, you may create a category through "+" -> category',
+            ),
+          ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching categories: $e')),
+        SnackBar(
+          content: Text('Error fetching categories: $e'),
+        ),
       );
     }
   }
 
-  void showCategoryDialog() {
-    _fetchBudgetCategories();
+  //show the pop-up dialog for user selection purpose
+  void showCategoryDialog() async {
+    await _fetchBudgetCategories();
+    String selectedCategory = viewModel.categoryController.text;
 
     showDialog(
       context: context,
@@ -77,8 +97,11 @@ class _BudgetPageState extends State<BudgetPage> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
+              backgroundColor: Colors.white,
               title: Text('Select Category'),
-              content: Column(
+              content: _budgetCategories.isEmpty
+                  ? Text('No category created, you may create a category through "+" -> category')
+                  : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: _budgetCategories
                     .map((category) => RadioListTile<String>(
@@ -88,14 +111,31 @@ class _BudgetPageState extends State<BudgetPage> {
                   onChanged: (value) {
                     setState(() {
                       selectedCategory = value!;
-                      viewModel.categoryController.text =
-                          selectedCategory;
                     });
-                    Navigator.of(context).pop();
                   },
                 ))
                     .toList(),
               ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // close the dialog
+                  },
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // update the category only if it is different from the original
+                    if (selectedCategory != viewModel.categoryController.text) {
+                      setState(() {
+                        viewModel.categoryController.text = selectedCategory;
+                      });
+                    }
+                    Navigator.of(context).pop(); // close the dialog
+                  },
+                  child: Text('OK'),
+                ),
+              ],
             );
           },
         );
@@ -103,6 +143,7 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
+  //category selection validation, must select a category
   String? _validateCategory(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please select a category';
@@ -110,6 +151,7 @@ class _BudgetPageState extends State<BudgetPage> {
     return null;
   }
 
+  //budget amount validation
   String? _validateAmount(String? value) {
     if (value == null || value.isEmpty) {
       return 'Amount cannot be empty';
@@ -124,6 +166,7 @@ class _BudgetPageState extends State<BudgetPage> {
     return null;
   }
 
+  //pop-up dialog for month and year selection
   Future<void> _pickMonthAndYear(BuildContext context) async {
       int? selectedYear;
       String? selectedMonth;
@@ -199,7 +242,7 @@ class _BudgetPageState extends State<BudgetPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFFFAE5CC),
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('Budget'),
         actions: [
           IconButton(
@@ -218,15 +261,7 @@ class _BudgetPageState extends State<BudgetPage> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFAE5CC),
-              Color(0xFF9F8A85),
-              Color(0xFF6E655E),
-            ],
-          ),
+          color: Color(0xFFEEF4F8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -281,7 +316,7 @@ class _BudgetPageState extends State<BudgetPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF52444E),
+                                  color: Color(0xFF85A5C3),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
@@ -309,11 +344,13 @@ class _BudgetPageState extends State<BudgetPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF332B28),
+                                  color: Color(0xFF547FA3),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     if (_formKey.currentState?.validate() ?? false) {
+                                      //check whether the created budget for that particular month and year already exists,
+                                      //if yes block it, if no proceed
                                       bool exists = await viewModel
                                           .checkExists(
                                           widget.username,
@@ -325,9 +362,12 @@ class _BudgetPageState extends State<BudgetPage> {
                                         );
                                         return;
                                       } else {
+                                        //if no budget category created for that specific month and year, insert the budget into database
                                         await viewModel.addBudget(
                                             widget.onBudgetAdded,
                                             widget.username, context);
+
+                                        //insert activity into history collection at the same time
                                         String specificText = "Add Budget: ${viewModel.categoryController.text} with ${viewModel.amountController.text}";
                                         await historyViewModel.addHistory(
                                             specificText, widget.username, context);
@@ -362,6 +402,7 @@ class _BudgetPageState extends State<BudgetPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

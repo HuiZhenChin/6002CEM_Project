@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to edit investments
 class EditInvest extends StatefulWidget {
   final Function(Invest) onInvestUpdated;
   final String username;
@@ -25,7 +25,7 @@ class EditInvest extends StatefulWidget {
 class _EditInvestState extends State<EditInvest> {
   int currentIndex = 0;
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0;  //navigation bar position index
   final _formKey = GlobalKey<FormState>();
   bool _isEditing = false;
   bool _isSaving = false;
@@ -52,18 +52,13 @@ class _EditInvestState extends State<EditInvest> {
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
-
-  }
-
-
+  //save changes for investments
   void _saveInvest() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSaving = true;
       });
 
-      // Construct the updated expense object
       Invest updatedInvest = Invest(
         id: widget.invest.id,
         title: titleController.text,
@@ -72,7 +67,6 @@ class _EditInvestState extends State<EditInvest> {
       );
 
       try {
-        // Get a reference to the document in Firestore
         String username = widget.username;
         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('dollar_sense')
@@ -90,7 +84,7 @@ class _EditInvestState extends State<EditInvest> {
               .update(updatedInvest.toMap());
         }
 
-        // Show a snackbar to indicate success
+        //success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Invest updated'),
@@ -99,16 +93,16 @@ class _EditInvestState extends State<EditInvest> {
 
         widget.onInvestUpdated(updatedInvest);
 
-        // Update UI state
+        //update UI state
         setState(() {
           _isEditing = false;
           _isSaving = false;
         });
       } catch (error) {
-        // Handle any errors that occur during the update process
+        //error handling
         print('Error updating invest: $error');
 
-        // Show a snackbar to indicate failure
+        //failure
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update invest'),
@@ -116,7 +110,7 @@ class _EditInvestState extends State<EditInvest> {
           ),
         );
 
-        // Reset UI state
+        //reset UI state
         setState(() {
           _isSaving = false;
         });
@@ -125,12 +119,12 @@ class _EditInvestState extends State<EditInvest> {
   }
 
   void _cancelEdit() {
-    // Reset controllers to original values
+    //reset controllers to original values
     titleController.text = widget.invest.title;
     amountController.text = widget.invest.amount.toString();
     dateController.text = widget.invest.date;
 
-    // Update UI state
+    //update UI state
     setState(() {
       _isEditing = false;
     });
@@ -141,6 +135,7 @@ class _EditInvestState extends State<EditInvest> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('Edit Invest'),
         actions: [
           if (_isEditing)
@@ -150,115 +145,136 @@ class _EditInvestState extends State<EditInvest> {
             ),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Text fields for editing invest data
-              SizedBox(height: 10),
-              // Title input
-              CustomInputField(
-                controller: titleController,
-                labelText: 'Title',
-                inputFormatters: [],
-              ),
-              SizedBox(height: 10),
-              // Amount input
-              CustomInputField(
-                controller: amountController,
-                labelText: 'Amount',
-                keyboardType: TextInputType.number,
-                inputFormatters: [CurrencyInputFormatter()],
-              ),
-              SizedBox(height: 10),
-              // Date input
-              CustomInputField(
-                controller: dateController,
-                labelText: 'Date',
-                keyboardType: TextInputType.datetime,
-                inputFormatters: [],
-                onTap: () async {
-                  final DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
-                  );
-                  if (pickedDate != null) {
-                    final formattedDate =
-                        "${pickedDate.day}-${pickedDate.month}-${pickedDate
-                        .year}";
-                    dateController.text = formattedDate;
-                  }
-                },
-              ),
-              SizedBox(height: 20),
-              // Cancel and Add
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Color(0xFF52444E),
-                        ),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _cancelEdit();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            elevation: 0,
+      body: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFEEF4F8),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                SizedBox(height: 10),
+                // Title input
+                CustomInputField(
+                  controller: titleController,
+                  labelText: 'Title',
+                  inputFormatters: [],
+                ),
+                SizedBox(height: 10),
+                // Amount input
+                CustomInputField(
+                  controller: amountController,
+                  labelText: 'Amount',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [CurrencyInputFormatter()],
+                ),
+                SizedBox(height: 10),
+                // Date input
+                CustomInputField(
+                  controller: dateController,
+                  labelText: 'Date',
+                  keyboardType: TextInputType.datetime,
+                  inputFormatters: [],
+                  onTap: () async {
+                    final DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime.now(),
+                      builder: (BuildContext context, Widget? child) {
+                        return Theme(
+                          data: ThemeData.light().copyWith(
+                            dialogBackgroundColor: Colors.white,
+                            colorScheme: ColorScheme.light(
+                              primary: Colors.blue.shade900,
+                              onPrimary: Colors.white,
+                              onSurface: Colors.blue.shade900,
+                            ),
+                            textButtonTheme: TextButtonThemeData(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.blue.shade900,
+                              ),
+                            ),
                           ),
-                          child: Text(
-                            'CANCEL',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (pickedDate != null) {
+                      final formattedDate = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
+                      dateController.text = formattedDate;
+                    }
+                  },
+                ),
+                SizedBox(height: 20),
+                // Cancel and Add buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Color(0xFF85A5C3),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _cancelEdit(); //cancel editing
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'CANCEL',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Color(0xFF332B28),
-                        ),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _saveInvest();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            elevation: 0,
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Color(0xFF547FA3),
                           ),
-                          child: Text(
-                            'UPDATE',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _saveInvest(); //save changes
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'UPDATE',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

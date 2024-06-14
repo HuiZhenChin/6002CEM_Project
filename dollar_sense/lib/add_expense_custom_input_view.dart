@@ -1,7 +1,7 @@
-// custom_input_field.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+//customized text input field
 class CustomInputField extends StatelessWidget {
   final String labelText;
   final TextEditingController controller;
@@ -30,21 +30,21 @@ class CustomInputField extends StatelessWidget {
       readOnly: readOnly,
       onTap: onTap,
       style: TextStyle(color: Colors.black87, fontSize: 16),
-      cursorColor: Colors.black87,
+      cursorColor: Color(0xFF004F9B),
       decoration: InputDecoration(
         labelText: labelText,
         border: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF39383D)),
           borderRadius: BorderRadius.all(Radius.circular(15)),
         ),
-        fillColor: Color(0xFFE0CEC3),
+        fillColor: Color(0xFFE1E3E7),
         filled: true,
         floatingLabelStyle: TextStyle(
           color: Colors.black,
           fontWeight: FontWeight.bold,
         ),
         labelStyle: TextStyle(
-          color: Colors.black,
+          color: Color(0xFF000000),
         ),
       ),
       validator: validator,

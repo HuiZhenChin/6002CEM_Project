@@ -2,15 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dollar_sense/budget_notifications.dart';
 import 'package:dollar_sense/budget_notifications_model.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'budget_model.dart';
 import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
-import 'transaction_history_view_model.dart';
 import 'add_expense_custom_input_view.dart';
-import 'currency_input_formatter.dart';
 
+//page to edit budget notifications
 class EditBudgetNotifications extends StatefulWidget {
   final Function(BudgetNotifications) onBudgetNotificationsUpdated;
   final String username;
@@ -32,19 +29,21 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
   final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 0; //navigation bar position index
 
   late TextEditingController notificationCategoryController;
   late TextEditingController reminderTypeController;
   late TextEditingController firstReminderController;
   late TextEditingController secondReminderController;
 
+  //get the original value
   late String originalReminderType;
   late String originalFirstReminder;
   late String originalSecondReminder;
 
   String _selectedReminderType = 'Basic';
   final List<String> _reminderTypes = ['Custom', 'Basic'];
+  final List<String> _firstReminderOptions = ['10', '20' , '30' , '40' , '50' , '60' , '70' , '80' , '90' ,];
   final List<String> _secondReminderOptions = ['None', 'Budget Exceeded'];
 
   @override
@@ -55,6 +54,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     firstReminderController = TextEditingController(text: widget.budgetNotifications.firstReminder);
     secondReminderController = TextEditingController(text: widget.budgetNotifications.secondReminder);
 
+    //store original value
     originalReminderType= widget.budgetNotifications.reminderType;
     originalFirstReminder= widget.budgetNotifications.firstReminder;
     originalSecondReminder= widget.budgetNotifications.secondReminder;
@@ -70,11 +70,13 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     super.dispose();
   }
 
+  //save changes for edited budget notifications
   void _saveBudgetNotifications() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSaving = true;
       });
+
 
       BudgetNotifications updatedBudgetNotifications = BudgetNotifications(
         id: widget.budgetNotifications.id,
@@ -131,7 +133,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
   }
 
   void _cancelEdit() {
-    // Set controllers' text back to original values
+    //set controllers to original values
     reminderTypeController.text= originalReminderType;
     firstReminderController.text= originalFirstReminder;
     secondReminderController.text= originalSecondReminder;
@@ -141,7 +143,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     });
   }
 
-// Fetch Budget Notifications Data
+  //fetch budget notifications data
   Future<List<BudgetNotifications>> _fetchBudgetNotifications() async {
     String username = widget.username;
     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -167,6 +169,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
 
   }
 
+  //pop-up dialog for reminder type
   Future<void> _showReminderTypeDialog() async {
     await showDialog(
       context: context,
@@ -187,7 +190,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                       if (_selectedReminderType == 'Basic') {
                         // Update text fields for Basic reminder type
                         reminderTypeController.text = "Basic";
-                        firstReminderController.text = "10%";
+                        firstReminderController.text = "10 (Remaining Budget) %";
                         secondReminderController.text = 'Budget Exceeded';
                       } else {
                         // Update text fields for Custom reminder type
@@ -207,33 +210,31 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     );
   }
 
-
+  //pop-up dialog for first reminder
   void _showFirstReminderDialog() async {
-    double originalFirstReminder = double.parse(firstReminderController.text.replaceAll('%', ''));
-    int selectedIndex = ((originalFirstReminder / 10) - 1).toInt(); // Calculate the index of the original first reminder
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: Text('Select 1st Reminder (Remaining Budget) %'),
           content: Container(
             width: double.maxFinite,
             child: ListView.builder(
               shrinkWrap: true,
-              itemCount: 9,
+              itemCount: _firstReminderOptions.length,
               itemBuilder: (context, index) {
-                final percentage = (index + 1) * 10.0;
                 return ListTile(
-                  title: Text('$percentage'),
+                  title: Text(_firstReminderOptions[index]),
                   onTap: () {
                     setState(() {
-                      firstReminderController.text = '$percentage%';
+                      firstReminderController.text = _firstReminderOptions[index];
                     });
                     Navigator.of(context).pop();
                   },
                   // Highlight the item if it matches the original value
-                  selected: index == selectedIndex,
+                  selected: _firstReminderOptions[index] == originalFirstReminder,
                 );
               },
             ),
@@ -243,8 +244,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     );
   }
 
-
-
+  //pop-up dialog for second reminder
   void _showSecondReminderDialog() async {
     String originalSecondReminder = secondReminderController.text;
 
@@ -252,6 +252,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: Text('Select 2nd Reminder'),
           content: Container(
             width: double.maxFinite,
@@ -278,6 +279,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
     );
   }
 
+  //text input validation
   String? _validateField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName cannot be empty';
@@ -290,20 +292,12 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFFFAE5CC),
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('Edit Budget Notifications'),
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFAE5CC),
-              Color(0xFF9F8A85),
-              Color(0xFF6E655E),
-            ],
-          ),
+         color: Color(0xFFEEF4F8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -319,6 +313,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                       FutureBuilder<List<BudgetNotifications>>(
                         future: _fetchBudgetNotifications(),
                         builder: (context, snapshot) {
+                          //if there is no budget notifications set yet
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return Center(
                               child: CircularProgressIndicator(),
@@ -331,7 +326,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                             return Column(
                               children: [
                                 Text(
-                                  'Budget Notifications:',
+                                  'Budget Notifications',
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 SizedBox(height: 10),
@@ -342,11 +337,12 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                                   onTap: () => _showReminderTypeDialog(),
                                   validator: (value) => _validateField(value, 'Reminder Type'),
                                 ),
+                                SizedBox(height: 10),
                                 CustomInputField(
                                   controller: firstReminderController,
                                   labelText: '1st Reminder (% remaining)',
                                   inputFormatters: [],
-                                  onTap: _showFirstReminderDialog,
+                                  onTap: _selectedReminderType == 'Basic' ? null : () => _showFirstReminderDialog(),
                                   readOnly: _selectedReminderType == 'Basic',
                                   validator: (value) => _validateField(value, '1st Reminder'),
                                 ),
@@ -376,7 +372,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF52444E),
+                                  color: Color(0xFF85A5C3),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
@@ -406,7 +402,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF332B28),
+                                  color: Color(0xFF547FA3),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: _isSaving ? null : _saveBudgetNotifications,
@@ -437,6 +433,7 @@ class _EditBudgetNotificationsState extends State<EditBudgetNotifications> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(

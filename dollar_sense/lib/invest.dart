@@ -9,6 +9,7 @@ import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
+//page to edit investments
 class InvestPage extends StatefulWidget {
   final String username;
   final Function(Invest) onInvestAdded;
@@ -22,21 +23,22 @@ class InvestPage extends StatefulWidget {
 class _InvestPageState extends State<InvestPage> {
   final _formKey = GlobalKey<FormState>();
   final viewModel = InvestViewModel();
-  final historyViewModel= TransactionHistoryViewModel();
-  final navigationBarViewModel= NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  final historyViewModel = TransactionHistoryViewModel();
+  final navigationBarViewModel = NavigationBarViewModel();
+  int _bottomNavIndex = 0; //navigation bar position index
 
   @override
   void initState() {
     super.initState();
-
   }
 
+  //input validation
   String? _validateField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName cannot be empty';
     }
-    if (fieldName == 'Amount' && !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value)) {
+    if (fieldName == 'Amount' &&
+        !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value)) {
       return 'Please enter a valid number';
     }
     return null;
@@ -46,7 +48,7 @@ class _InvestPageState extends State<InvestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFFFAE5CC),
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('Invest'),
         actions: [
           IconButton(
@@ -66,15 +68,7 @@ class _InvestPageState extends State<InvestPage> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFAE5CC),
-              Color(0xFF9F8A85),
-              Color(0xFF6E655E),
-            ],
-          ),
+          color: Color(0xFFEEF4F8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -112,10 +106,33 @@ class _InvestPageState extends State<InvestPage> {
                             context: context,
                             initialDate: DateTime.now(),
                             firstDate: DateTime(2000),
-                            lastDate: DateTime(2101),
+                            lastDate: DateTime.now(), //block date after today
+                            builder: (BuildContext context, Widget? child) {
+                              return Theme(
+                                data: ThemeData.light().copyWith(
+                                  dialogBackgroundColor: Colors.white,
+                                  colorScheme: ColorScheme.light(
+                                    primary: Colors.blue
+                                        .shade900,
+                                    onPrimary:
+                                        Colors.white,
+                                    onSurface:
+                                        Colors.blue.shade900,
+                                  ),
+                                  textButtonTheme: TextButtonThemeData(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors
+                                          .blue.shade900,
+                                    ),
+                                  ),
+                                ),
+                                child: child!,
+                              );
+                            },
                           );
                           if (pickedDate != null) {
-                            final formattedDate = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
+                            final formattedDate =
+                                "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
                             viewModel.dateController.text = formattedDate;
                           }
                         },
@@ -130,7 +147,7 @@ class _InvestPageState extends State<InvestPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF52444E),
+                                  color: Color(0xFF85A5C3),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
@@ -158,16 +175,26 @@ class _InvestPageState extends State<InvestPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF332B28),
+                                  color: Color(0xFF547FA3),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () async {
-                                    if (_formKey.currentState?.validate() ?? false) {
-                                      viewModel.addInvest(widget.onInvestAdded, widget.username, context);
-                                      String specificText = "Add Invest: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
-                                      await historyViewModel.addHistory(specificText, widget.username, context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('New Invest Added')),
+                                    if (_formKey.currentState?.validate() ??
+                                        false) {
+                                      //add new investments
+                                      viewModel.addInvest(widget.onInvestAdded,
+                                          widget.username, context);
+                                      //add record to history collection in the database
+                                      String specificText =
+                                          "Add Invest: ${viewModel.titleController.text} with ${viewModel.amountController.text}";
+                                      await historyViewModel.addHistory(
+                                          specificText,
+                                          widget.username,
+                                          context);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text('New Invest Added')),
                                       );
                                       Navigator.pop(context);
                                     }
@@ -197,11 +224,13 @@ class _InvestPageState extends State<InvestPage> {
           ],
         ),
       ),
+      //navigation bar
       floatingActionButton: CustomSpeedDial(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
+        onTabTapped:
+            NavigationBarViewModel.onTabTapped(context, widget.username),
       ).build(),
     );
   }

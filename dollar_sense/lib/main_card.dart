@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//customized main card design in the Home Page (display Current Net Worth)
 class MainCard extends StatelessWidget {
   final String title;
   final String amount;
@@ -14,7 +15,7 @@ class MainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Card(
-        color: Color(0xFF39383D),
+        color: Color(0xFF3B4B56),
         child: Container(
           height: 150.0,
           child: Padding(

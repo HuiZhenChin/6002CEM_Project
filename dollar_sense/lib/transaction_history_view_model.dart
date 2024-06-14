@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'transaction_history_model.dart';
-import 'package:intl/intl.dart';
 
+//history view model
 class TransactionHistoryViewModel {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  //insert history record
   Future<void> addHistory(String text, String username, BuildContext context) async {
     DateTime date = DateTime.now();
 
@@ -18,38 +19,38 @@ class TransactionHistoryViewModel {
   }
 
 
+  //save to database
   Future<void> _saveHistoryToFirestore(History history, String username, BuildContext context) async {
     try {
-      // Fetch the user document
+      //fetch the user document
       QuerySnapshot userSnapshot = await _firestore
           .collection('dollar_sense')
           .where('username', isEqualTo: username)
           .get();
 
       if (userSnapshot.docs.isNotEmpty) {
-        // Get the first matching user document ID
+        //get the user ID
         String userId = userSnapshot.docs.first.id;
 
-        // Reference to the history subcollection
         CollectionReference historyCollection = _firestore
             .collection('dollar_sense')
             .doc(userId)
             .collection('history');
 
-        // Data to be added to the history collection
+        //data to be added to the history collection
         Map<String, dynamic> historyData = {
           'history_text': history.text,
           'history_date': history.date,
         };
 
-        // Add data to Firestore
+        //add data to Firestore
         await historyCollection.add(historyData);
 
       } else {
         throw Exception('User not found');
       }
     } catch (e) {
-      // Catch and display error messages
+      //catch and display error messages
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );

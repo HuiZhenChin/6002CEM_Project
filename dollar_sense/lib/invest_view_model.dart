@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'invest_model.dart';
 
+//invest view model
 class InvestViewModel {
   TextEditingController titleController = TextEditingController();
   TextEditingController amountController = TextEditingController();
   TextEditingController dateController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  //insert new investment
   Future<void> addInvest(Function(Invest) onInvestAdded, String username, BuildContext context) async {
     String title = titleController.text;
     double amount = double.tryParse(amountController.text) ?? 0.0;
@@ -20,12 +22,13 @@ class InvestViewModel {
 
       DocumentSnapshot counterSnapshot = await counterDoc.get();
 
+      //get the invest id
       int newInvestId = 1;
       if (counterSnapshot.exists) {
         newInvestId = counterSnapshot['currentId'] as int;
         newInvestId++;
 
-        // Update the counter document with the new currentId
+        //update the counter document with the new currentId
         await counterDoc.set({'currentId': newInvestId});
 
 
@@ -45,9 +48,10 @@ class InvestViewModel {
     }
   }
 
+    //save to database
     Future<void> _saveInvestToFirestore(Invest invest, String username,
         BuildContext context) async {
-      // Query Firestore to get the user ID from the username
+
       QuerySnapshot userSnapshot = await _firestore
           .collection('dollar_sense')
           .where('username', isEqualTo: username)
