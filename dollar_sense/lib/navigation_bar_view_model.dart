@@ -1,3 +1,5 @@
+import 'package:dollar_sense/calendar.dart';
+import 'package:dollar_sense/report.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'my_account.dart';
@@ -15,8 +17,18 @@ class NavigationBarViewModel {
         );
         
       } else if (index == 1) {
-
-      }else if (index == 3) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Calendar(username: username,),
+          ),
+        );
+      } else if (index == 2) {Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => GraphPage(username: username),
+        ),
+      );}else if (index == 3) {
         Navigator.push(
           context,
           MaterialPageRoute(

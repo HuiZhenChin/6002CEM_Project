@@ -64,39 +64,56 @@ class _RegisterFormState extends State<RegisterForm> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       try {
-        // Check if the email already exists in Firestore
-        QuerySnapshot querySnapshot = await _firestore
+        //check if the email already exists in database
+        QuerySnapshot emailSnapshot = await _firestore
             .collection('dollar_sense')
             .where('email', isEqualTo: _email)
             .get();
 
-        // If the query returns any documents, it means the email already exists
-        if (querySnapshot.docs.isNotEmpty) {
+        //if it returns any documents, meaning email already registered in database
+        if (emailSnapshot.docs.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('An account with this email already exists.'),
             backgroundColor: Colors.red,
           ));
-          return; // Exit the method if email already exists
+          //exit if email already exists
+          return;
         }
 
-        // Proceed with registration if email doesn't exist
+        //check if the username already exists in database
+        QuerySnapshot usernameSnapshot = await _firestore
+            .collection('dollar_sense')
+            .where('username', isEqualTo: _username)
+            .get();
 
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        //if it returns any documents, meaning username already exists
+        if (usernameSnapshot.docs.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('This username is already taken.'),
+            backgroundColor: Colors.red,
+          ));
+          //exit if username already exists
+          return;
+        }
+
+        //go to registration if email and username are unique
+        UserCredential userCredential =
+        await _auth.createUserWithEmailAndPassword(
           email: _email,
           password: _password,
         );
 
-        // Get the user ID
+        //get the user ID
         String userId = userCredential.user!.uid;
 
-        // Save additional user data in Firestore
+        //save user data to database
         await _firestore.collection('dollar_sense').doc(userId).set({
           'email': _email,
           'password': _password,
           'username': _username,
-          // Add other user data as needed
         });
 
+        //go to Login Page when successfully registered
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => LoginPage()),
@@ -152,7 +169,7 @@ class _RegisterFormState extends State<RegisterForm> {
             decoration: InputDecoration(labelText: 'Username'),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter an username';
+                return 'Please enter a username';
               }
               return null;
             },

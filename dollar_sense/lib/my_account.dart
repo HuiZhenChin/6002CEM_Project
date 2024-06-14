@@ -10,7 +10,6 @@ import 'navigation_bar.dart';
 import 'speed_dial.dart';
 
 class MyAccount extends StatefulWidget {
-
   final String username;
 
   MyAccount({required this.username});
@@ -20,98 +19,62 @@ class MyAccount extends StatefulWidget {
 }
 
 class _MyAccountState extends State<MyAccount> {
-  File? _image;
+  final TextEditingController _emailController = TextEditingController();
+  String _fetchedEmail = '';
   String _username = '';
   String _email = '';
-  final navigationBarViewModel= NavigationBarViewModel();
+  final navigationBarViewModel = NavigationBarViewModel();
   int _bottomNavIndex = 3;
 
   @override
   void initState() {
     super.initState();
-    _getUserData();
+    _fetchEmail();
   }
 
-  Future<void> _getUserData() async {
-    try {
-      // Get the current user ID
-      String userId = FirebaseAuth.instance.currentUser!.uid;
+  //fetch email of the user
+  Future<void> _fetchEmail() async {
+    String username = widget.username;
+    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('dollar_sense')
+        .where('username', isEqualTo: username)
+        .get();
 
-      // Retrieve user data from Firestore using user ID
-      DocumentSnapshot userData = await FirebaseFirestore.instance
+    if (userSnapshot.docs.isNotEmpty) {
+      String userId = userSnapshot.docs.first.id;
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('dollar_sense')
           .doc(userId)
           .get();
 
-      // Update state with user data
-      setState(() {
-        _username = userData.get('username') ?? '';
-        _email = userData.get('email') ?? '';
-      });
-
-      // Debugging: Print retrieved username and email
-      print('Retrieved username: $_username');
-      print('Retrieved email: $_email');
-    } catch (e) {
-      print('Error fetching user data: $e');
+      if (userDoc.exists) {
+        String email = userDoc['email'] ?? '';
+        setState(() {
+          _fetchedEmail = email;
+        });
+      }
     }
   }
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFFFAE5CC),
+        backgroundColor: Color(0xFFEEF4F8),
         title: Text('My Account'),
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFAE5CC),
-              Color(0xFF9F8A85),
-              Color(0xFF655C56),
-            ],
-          ),
+          color: Color(0xFFEEF4F8),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _image != null
-                      ? FileImage(_image!)
-                      : AssetImage('assets/avatar.jpg') as ImageProvider,
-                  child: Align(
-                    alignment: Alignment.bottomRight,
-                    child: Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
               Text(
-                'Username: ${widget.username}', // Display retrieved username
+                'Username: ${widget.username}',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -120,9 +83,10 @@ class _MyAccountState extends State<MyAccount> {
               ),
               SizedBox(height: 8),
               Text(
-                'Email: ', // Display retrieved email
+                'Email: $_fetchedEmail',
                 style: TextStyle(
                   fontSize: 18,
+                  fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
@@ -136,7 +100,9 @@ class _MyAccountState extends State<MyAccount> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => EditAccount(username: widget.username)),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EditAccount(username: widget.username)),
                   );
                 },
                 child: Text('Edit Account'),
@@ -156,7 +122,6 @@ class _MyAccountState extends State<MyAccount> {
                 },
                 child: Text('Log Out'),
               ),
-
             ],
           ),
         ),

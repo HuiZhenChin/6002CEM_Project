@@ -423,6 +423,7 @@ class _HomePageState extends State<HomePage> {
             'category': budgetCategory,
             'month': monthNumber,
             'year': year,
+            'type': "Budget",
           }, SetOptions(merge: true));
         }
 
@@ -1078,11 +1079,7 @@ class _HomePageState extends State<HomePage> {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: CustomNavigationBar(
           currentIndex: _bottomNavIndex,
-          onTabTapped: (index) {
-            setState(() {
-              _bottomNavIndex = index;
-            });
-          },
+          onTabTapped: NavigationBarViewModel.onTabTapped(context, widget.username),
         ).build(),
       ),
     );
