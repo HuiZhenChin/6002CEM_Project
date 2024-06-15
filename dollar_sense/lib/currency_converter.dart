@@ -20,21 +20,22 @@ class CurrencyConverterPage extends StatefulWidget {
 }
 
 class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
-  String baseCurrency = 'MYR';  //set MYR (Malaysian Ringgit) as the base
-  late String currencyApiUrl;   //API url
-  Map<String, dynamic>? currencyData;  //currency data mapping
-  late TextEditingController amountController;  //control the current amount
-  late TextEditingController convertedAmountController;  //control the converted amount
+  String baseCurrency = 'MYR'; //set MYR (Malaysian Ringgit) as the base
+  late String currencyApiUrl; //API url
+  Map<String, dynamic>? currencyData; //currency data mapping
+  late TextEditingController amountController; //control the current amount
+  late TextEditingController convertedAmountController; //control the converted amount
   final viewModel = CurrencyConverterViewModel();
-  int _bottomNavIndex = 0;  //navigation bar position index
-  Map<String, String> currencyToCountry = {}; //map to store currency to country data
+  int _bottomNavIndex = 0; //navigation bar position index
+  Map<String, String> currencyToCountry = {
+  }; //map to store currency to country data
 
   @override
   void initState() {
     super.initState();
     amountController = TextEditingController();
     convertedAmountController = TextEditingController();
-    fetchBaseCurrency();  //fetch the current base currency in the application
+    fetchBaseCurrency(); //fetch the current base currency in the application
   }
 
   //function to fetch the base currency
@@ -59,9 +60,9 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         if (currencySnapshot.docs.isNotEmpty) {
           String baseCurrencyCode = currencySnapshot.docs.first['code'];
           setState(() {
-            baseCurrency = baseCurrencyCode;  //retrieve the currency code
-            updateApiUrl(baseCurrency);  //update the API url
-            fetchCurrencyAPIData();  //fetch the API data
+            baseCurrency = baseCurrencyCode; //retrieve the currency code
+            updateApiUrl(baseCurrency); //update the API url
+            fetchCurrencyAPIData(); //fetch the API data
           });
         } else {
           //if the user does not have a currency conversion before, set default to MYR with 1.00
@@ -115,7 +116,8 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
   //function to fetch country data from RestCountries API
   Future<void> fetchCountryData(String currencyCode) async {
     try {
-      final response = await http.get(Uri.parse('https://restcountries.com/v3.1/currency/$currencyCode'));
+      final response = await http.get(
+          Uri.parse('https://restcountries.com/v3.1/currency/$currencyCode'));
       if (response.statusCode == 200) {
         var countryData = json.decode(response.body);
         if (countryData != null && countryData.isNotEmpty) {
@@ -187,46 +189,50 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
 
   //function to fetch the currency rates
   Future<void> _fetchCurrency() async {
-    String username = widget.username;
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      CollectionReference currencyCollection = FirebaseFirestore.instance
+    try {
+      String username = widget.username;
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
-          .doc(userId)
-          .collection('currency');
+          .where('username', isEqualTo: username)
+          .get();
 
-      QuerySnapshot currencySnapshot = await currencyCollection.get();
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        CollectionReference currencyCollection = FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('currency');
 
-      if (currencySnapshot.docs.isNotEmpty) {
-        DocumentReference currencyDocRef = currencySnapshot.docs.first
-            .reference;
-        DocumentSnapshot currencyDocSnapshot = await currencyDocRef.get();
+        QuerySnapshot currencySnapshot = await currencyCollection.get();
+
+        if (currencySnapshot.docs.isNotEmpty) {
+          DocumentReference currencyDocRef = currencySnapshot.docs.first
+              .reference;
+          DocumentSnapshot currencyDocSnapshot = await currencyDocRef.get();
 
         if (currencyDocSnapshot.exists) {
-          double currencyRate = currencyDocSnapshot['rate'];
+            double currencyRate = currencyDocSnapshot['rate'];
 
-          //update all collections with new currency rates
-          await _updateAllCollections(userId, currencyRate, currencyDocRef);
+            //update all collections with new currency rates
+            await _updateAllCollections(userId, currencyRate);
+          }
         }
       }
+    } catch (e) {
+      print('Error fetching currency: $e');
     }
   }
 
+
   //function to update all the expenses, budget, income and investment amount in the system when there is currency conversion
-  Future<void> _updateAllCollections(String userId, double currencyRate,
-      DocumentReference currencyDocRef) async {
+  Future<void> _updateAllCollections(String userId, double currencyRate) async {
+    // Update all budget amount
     QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
         .collection('dollar_sense')
         .doc(userId)
         .collection('budget')
         .get();
 
-    //update all budget amount
     for (var doc in budgetSnapshot.docs) {
       double budgetAmount = doc['budget_amount'];
       double convertedBudgetAmount = budgetAmount * currencyRate;
@@ -291,11 +297,7 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
         'expense_amount': convertedExpense
       });
     }
-<<<<<<< Updated upstream
 
-
-=======
->>>>>>> Stashed changes
   }
 
   @override
@@ -387,11 +389,11 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     //save changes to database to update all amount in the system
-                    viewModel.addCurrency(
+                    await viewModel.addCurrency(
                         widget.username, widget.onCurrencyAdded, context);
-                    _fetchCurrency();
+                    await _fetchCurrency();
                   },
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(

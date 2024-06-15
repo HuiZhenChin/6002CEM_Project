@@ -243,38 +243,6 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
     );
   }
 
-  //fetch expense categories
-  Future<Map<String, double>> _fetchExpenseCategories() async {
-    String username = widget.username;
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      QuerySnapshot expenseSnapshot = await FirebaseFirestore.instance
-          .collection('dollar_sense')
-          .doc(userId)
-          .collection('expenses')
-          .get();
-
-      Map<String, double> categoryExpenses = {};
-      expenseSnapshot.docs.forEach((doc) {
-        Expense expense = Expense.fromDocument(doc);
-        if (categoryExpenses.containsKey(expense.category)) {
-          categoryExpenses[expense.category] =
-              (categoryExpenses[expense.category] ?? 0) + expense.amount;
-        } else {
-          categoryExpenses[expense.category] = expense.amount;
-        }
-      });
-
-      return categoryExpenses;
-    } else {
-      return {};
-    }
-  }
 
   //handle budgets that have newly added with notifications
   void handleBudgetNotificationsAdded(
@@ -486,42 +454,6 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 }
               },
             ),
-            SizedBox(height: 16.0),
-            // Expense Categories Section
-            FutureBuilder<Map<String, double>>(
-              future: _fetchExpenseCategories(),
-              builder: (context, expenseSnapshot) {
-                if (expenseSnapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                } else if (expenseSnapshot.data == null ||
-                    expenseSnapshot.data!.isEmpty) {
-                  return Center(
-                    //if no expense category found
-                    child: Text('No expenses found.'),
-                  );
-                } else {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          //display the list of expenses categories
-                          'Expense Categories',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      _buildCategoryList(expenseSnapshot.data!, 'expenses'),
-                    ],
-                  );
-                }
-              },
-            ),
-
           ],
         ),
       ),

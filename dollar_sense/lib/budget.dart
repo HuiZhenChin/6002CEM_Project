@@ -368,7 +368,7 @@ class _BudgetPageState extends State<BudgetPage> {
                                             widget.username, context);
 
                                         //insert activity into history collection at the same time
-                                        String specificText = "Add Budget: ${viewModel.categoryController.text} with ${viewModel.amountController.text}";
+                                        String specificText = "Added Budget";
                                         await historyViewModel.addHistory(
                                             specificText, widget.username, context);
                                         ScaffoldMessenger.of(context).showSnackBar(

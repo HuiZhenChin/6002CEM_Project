@@ -2,8 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'add_calendar.dart';
 import 'event_model.dart';
+import 'navigation_bar_view_model.dart';
+import 'navigation_bar.dart';
+import 'speed_dial.dart';
+import 'add_calendar.dart';
 
 class Calendar extends StatefulWidget {
   final String username;
@@ -18,6 +21,7 @@ class _CalendarState extends State<Calendar> {
   late DateTime _selectedDay;
   Map<DateTime, List<String>> _notes = {};
   Map<String, List<Event>> _events = {};
+  int _bottomNavIndex = 1;
 
   @override
   void initState() {

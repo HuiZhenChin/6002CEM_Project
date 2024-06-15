@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'navigation_bar_view_model.dart';
 import 'navigation_bar.dart';
 import 'speed_dial.dart';
+import 'dart:math';
 
 class GraphPage extends StatefulWidget {
   final String username;
@@ -16,7 +17,7 @@ class GraphPage extends StatefulWidget {
 
 class _GraphPageState extends State<GraphPage> {
   final navigationBarViewModel = NavigationBarViewModel();
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 2;
   List<Map<String, dynamic>> currentMonthData = [];
   List<String> availableMonths = [];
   String selectedMonth = '';
@@ -78,6 +79,63 @@ class _GraphPageState extends State<GraphPage> {
     }
   }
 
+  //find highest value
+  double findHighestValue(List<Map<String, dynamic>> data) {
+    double highest = double.negativeInfinity;
+    data.forEach((entry) {
+      double maxEntryValue = [
+        entry['total_budget']?.toDouble() ?? 0.0,
+        entry['total_expenses']?.toDouble() ?? 0.0,
+        entry['total_income']?.toDouble() ?? 0.0,
+        entry['total_invest']?.toDouble() ?? 0.0,
+      ].reduce((a, b) => a > b ? a : b);
+      if (maxEntryValue > highest) {
+        highest = maxEntryValue;
+      }
+    });
+    return highest;
+  }
+
+  //find lowest value
+  double findLowestValue(List<Map<String, dynamic>> data) {
+    double lowest = double.infinity;
+    data.forEach((entry) {
+      double minEntryValue = [
+        entry['total_budget']?.toDouble() ?? 0.0,
+        entry['total_expenses']?.toDouble() ?? 0.0,
+        entry['total_income']?.toDouble() ?? 0.0,
+        entry['total_invest']?.toDouble() ?? 0.0,
+      ].reduce((a, b) => a < b ? a : b);
+      if (minEntryValue < lowest) {
+        lowest = minEntryValue;
+      }
+    });
+    return lowest;
+  }
+
+  //calculate bar chart y-axis range interval
+  double calculateInterval(double highest, double lowest) {
+    double range = highest - lowest;
+    if (range == 0) {
+      return 1.0; //return a default interval if all values are the same
+    }
+
+    double roughInterval = range / 4;
+    double magnitude = pow(10, (log(roughInterval) / log(10)).floor().toDouble()).toDouble();
+    double normalizedInterval = roughInterval / magnitude;
+
+    if (normalizedInterval < 1.5) {
+      return magnitude * 1;
+    } else if (normalizedInterval < 3) {
+      return magnitude * 2;
+    } else if (normalizedInterval < 7) {
+      return magnitude * 5;
+    } else {
+      return magnitude * 10;
+    }
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,6 +186,19 @@ class _GraphPageState extends State<GraphPage> {
             Expanded(
               child: buildBarChartWithLegend(),
             ),
+            SizedBox(height: 16),
+            // No data recorded message
+            if (currentMonthData.every((data) =>
+            (data['total_budget'] ?? 0.0) == 0.0 &&
+                (data['total_expenses'] ?? 0.0) == 0.0 &&
+                (data['total_income'] ?? 0.0) == 0.0 &&
+                (data['total_invest'] ?? 0.0) == 0.0))
+              Center(
+                child: Text(
+                  'No data recorded',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
           ],
         ),
       ),
@@ -141,30 +212,37 @@ class _GraphPageState extends State<GraphPage> {
     );
   }
 
+
   //graph in bar chart
   Widget buildBarChartWithLegend() {
+    if (currentMonthData.isEmpty) {
+      return Center(
+        child: Text('No data available'),
+      );
+    }
+
+    double highestValue = findHighestValue(currentMonthData);
+    double lowestValue = findLowestValue(currentMonthData);
+    double interval = calculateInterval(highestValue, lowestValue);
+
     return Column(
       children: [
-        // Bar chart
+        //bar chart
         Expanded(
           child: Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: BarChart(
               BarChartData(
-                barGroups: currentMonthData
-                    .asMap()
-                    .entries
-                    .map((entry) {
+                barGroups: currentMonthData.asMap().entries.map((entry) {
                   int index = entry.key;
                   var data = entry.value;
 
-                  //create BarChartGroupData for each category
+                  // Create BarChartGroupData for each category
                   return BarChartGroupData(
                     x: index,
                     barsSpace: 16,
                     barRods: [
-                      //bar for total_budget
                       BarChartRodData(
                         y: data['total_budget']?.toDouble() ?? 0.0,
                         colors: [Color(0xFFC8F5EC)],
@@ -178,48 +256,66 @@ class _GraphPageState extends State<GraphPage> {
                           ),
                         ],
                       ),
-                      //bar for total_expenses
-                      BarChartRodData(
-                        y: data['total_expenses']?.toDouble() ?? 0.0,
-                        colors: [Color(0xFF98EDE1)],
-                        width: 32,
-                        borderRadius: BorderRadius.zero,
-                        rodStackItems: [
-                          BarChartRodStackItem(
-                            0,
-                            data['total_expenses']?.toDouble() ?? 0.0,
-                            Color(0xFF98EDE1),
-                          ),
-                        ],
-                      ),
-                      //bar for total_income
-                      BarChartRodData(
-                        y: data['total_income']?.toDouble() ?? 0.0,
-                        colors: [Color(0xFF63CBC6)],
-                        width: 32,
-                        borderRadius: BorderRadius.zero,
-                        rodStackItems: [
-                          BarChartRodStackItem(
-                            0,
-                            data['total_income']?.toDouble() ?? 0.0,
-                            Color(0xFF63CBC6),
-                          ),
-                        ],
-                      ),
-                      //bar for total_invest
-                      BarChartRodData(
-                        y: data['total_invest']?.toDouble() ?? 0.0,
-                        colors: [Color(0xFF3B979B)],
-                        width: 32,
-                        borderRadius: BorderRadius.zero,
-                        rodStackItems: [
-                          BarChartRodStackItem(
-                            0,
-                            data['total_invest']?.toDouble() ?? 0.0,
-                            Color(0xFF3B979B),
-                          ),
-                        ],
-                      ),
+                      if (data['total_expenses']?.toDouble() != 0.0)
+                        BarChartRodData(
+                          y: data['total_expenses']?.toDouble() ?? 0.0,
+                          colors: [Color(0xFF98EDE1)],
+                          width: 32,
+                          borderRadius: BorderRadius.zero,
+                          rodStackItems: [
+                            BarChartRodStackItem(
+                              0,
+                              data['total_expenses']?.toDouble() ?? 0.0,
+                              Color(0xFF98EDE1),
+                            ),
+                          ],
+                        ),
+                      if (data['total_income']?.toDouble() != 0.0)
+                        BarChartRodData(
+                          y: data['total_income']?.toDouble() ?? 0.0,
+                          colors: [Color(0xFF63CBC6)],
+                          width: 32,
+                          borderRadius: BorderRadius.zero,
+                          rodStackItems: [
+                            BarChartRodStackItem(
+                              0,
+                              data['total_income']?.toDouble() ?? 0.0,
+                              Color(0xFF63CBC6),
+                            ),
+                          ],
+                        ),
+                      if (data['total_invest']?.toDouble() != 0.0)
+                        BarChartRodData(
+                          y: data['total_invest']?.toDouble() ?? 0.0,
+                          colors: [Color(0xFF3B979B)],
+                          width: 32,
+                          borderRadius: BorderRadius.zero,
+                          rodStackItems: [
+                            BarChartRodStackItem(
+                              0,
+                              data['total_invest']?.toDouble() ?? 0.0,
+                              Color(0xFF3B979B),
+                            ),
+                          ],
+                        ),
+                      // Add a default BarChartRodData with height 0 if all values are 0
+                      if (data['total_budget']?.toDouble() == 0.0 &&
+                          data['total_expenses']?.toDouble() == 0.0 &&
+                          data['total_income']?.toDouble() == 0.0 &&
+                          data['total_invest']?.toDouble() == 0.0)
+                        BarChartRodData(
+                          y: 0.0,
+                          colors: [Colors.transparent],
+                          width: 32,
+                          borderRadius: BorderRadius.zero,
+                          rodStackItems: [
+                            BarChartRodStackItem(
+                              0,
+                              0.0,
+                              Colors.transparent,
+                            ),
+                          ],
+                        ),
                     ],
                   );
                 }).toList(),
@@ -231,7 +327,7 @@ class _GraphPageState extends State<GraphPage> {
                       return '${(value ~/ 1000).toInt()}k';
                     },
                     margin: 10,
-                    interval: 1000,
+                    interval: interval,
                   ),
                   bottomTitles: SideTitles(
                     showTitles: true,
@@ -249,15 +345,13 @@ class _GraphPageState extends State<GraphPage> {
                   leftTitle: AxisTitle(
                     showTitle: true,
                     titleText: 'Amount',
-                    textStyle:
-                    TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     margin: 5,
                   ),
                   bottomTitle: AxisTitle(
                     showTitle: true,
                     titleText: 'Month',
-                    textStyle:
-                    TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     margin: 5,
                   ),
                 ),
@@ -285,6 +379,7 @@ class _GraphPageState extends State<GraphPage> {
     );
   }
 
+
   //graph in pie chart
   Widget buildPieChart() {
     double totalBudget = currentMonthData.fold(
@@ -296,53 +391,84 @@ class _GraphPageState extends State<GraphPage> {
     double totalInvest = currentMonthData.fold(
         0, (sum, item) => sum + (item['total_invest']?.toDouble() ?? 0.0));
 
+    List<PieChartSectionData> pieSections = [];
+    List<Widget> zeroValueMessages = [];
+
+    if (totalBudget != 0.0) {
+      pieSections.add(PieChartSectionData(
+        value: totalBudget,
+        color: Color(0xFF9DC3E2),
+        title: 'Budget',
+        radius: 120,
+        titleStyle: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black),
+      ));
+    } else {
+      zeroValueMessages.add(Text('Total Budget = 0.00'));
+    }
+
+    if (totalExpenses != 0.0) {
+      pieSections.add(PieChartSectionData(
+        value: totalExpenses,
+        color: Color(0xFF9DD2DB),
+        title: 'Expenses',
+        radius: 120,
+        titleStyle: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black),
+      ));
+    } else {
+      zeroValueMessages.add(Text('Total Expenses = 0.00'));
+    }
+
+    if (totalIncome != 0.0) {
+      pieSections.add(PieChartSectionData(
+        value: totalIncome,
+        color: Color(0xFFFADCE4),
+        title: 'Income',
+        radius: 120,
+        titleStyle: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black),
+      ));
+    } else {
+      zeroValueMessages.add(Text('Total Income = 0.00'));
+    }
+
+    if (totalInvest != 0.0) {
+      pieSections.add(PieChartSectionData(
+        value: totalInvest,
+        color: Color(0xFFFFB5CC),
+        title: 'Invest',
+        radius: 120,
+        titleStyle: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black),
+      ));
+    } else {
+      zeroValueMessages.add(Text('Total Invest = 0.00'));
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: PieChart(
-        PieChartData(
-          sections: [
-            PieChartSectionData(
-              value: totalBudget,
-              color: Color(0xFF9DC3E2),
-              title: 'Budget',
-              radius: 120,
-              titleStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
+      child: Column(
+        children: [
+          Expanded(
+            child: PieChart(
+              PieChartData(
+                sections: pieSections,
+              ),
             ),
-            PieChartSectionData(
-              value: totalExpenses,
-              color: Color(0xFF9DD2DB),
-              title: 'Expenses',
-              radius: 120,
-              titleStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
-            ),
-            PieChartSectionData(
-              value: totalIncome,
-              color: Color(0xFFFADCE4),
-              title: 'Income',
-              radius: 120,
-              titleStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
-            ),
-            PieChartSectionData(
-              value: totalInvest,
-              color: Color(0xFFFFB5CC),
-              title: 'Invest',
-              radius: 120,
-              titleStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
-            ),
-          ],
-        ),
+          ),
+          Column(
+            children: zeroValueMessages,
+          ),
+        ],
       ),
     );
   }
@@ -421,7 +547,7 @@ class _GraphPageState extends State<GraphPage> {
   }
 }
 
-  class LegendItem extends StatelessWidget {
+class LegendItem extends StatelessWidget {
   final Color color;
   final String text;
 
