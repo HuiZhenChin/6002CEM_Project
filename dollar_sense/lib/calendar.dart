@@ -1,12 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'event_model.dart';
-import 'navigation_bar_view_model.dart';
-import 'navigation_bar.dart';
-import 'speed_dial.dart';
-import 'add_calendar.dart';
+import 'add_calendar.dart'; // Assuming this is where you define AddCalendarPage
+import 'event_model.dart'; // Assuming this is where you define the Event class
 
 class Calendar extends StatefulWidget {
   final String username;
@@ -19,224 +16,220 @@ class Calendar extends StatefulWidget {
 
 class _CalendarState extends State<Calendar> {
   late DateTime _selectedDay;
-  Map<DateTime, List<String>> _notes = {};
-  Map<String, List<Event>> _events = {};
-  int _bottomNavIndex = 1;
+  Map<DateTime, List<Event>> _events = {};
 
   @override
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
-    _fetchEventsFromFirestore(DateTime.now());
+    _initializeEvents();
   }
 
-  //fetch calendar details from firebase
-  Future<List<Event>> _fetchEventsFromFirestore(DateTime selectedDate) async {
-    String username = widget.username;
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
-
-    //fetch from the event collection
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      QuerySnapshot eventSnapshot = await FirebaseFirestore.instance
+  Future<void> _initializeEvents() async {
+    try {
+      String username = widget.username;
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('dollar_sense')
-          .doc(userId)
-          .collection('event')
-          .where('event_date',
-          isEqualTo: DateFormat('yyyy-MM-dd').format(selectedDate))
-          .orderBy('id')
+          .where('username', isEqualTo: username)
           .get();
 
-      return eventSnapshot.docs.map((doc) => Event.fromDocument(doc)).toList();
-    } else {
-      return [];
-    }
-  }
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        QuerySnapshot eventSnapshot = await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('event')
+            .get();
 
-  List<String> _getNotesForDay(DateTime day) {
-    return _notes[day] ?? [];
-  }
+        setState(() {
+          _events.clear(); // Clear existing events before adding new ones
 
-  //add new event to calendar
-  void _addNoteToCalendar(Event event) async {
-    String username = widget.username;
-    QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .where('username', isEqualTo: username)
-        .get();
+          for (var doc in eventSnapshot.docs) {
+            Timestamp eventTimestamp = doc["event_date"];
+            String eventId = doc["event_id"];
+            String eventTitle = doc["event_title"];
 
-    if (userSnapshot.docs.isNotEmpty) {
-      String userId = userSnapshot.docs.first.id;
-      await FirebaseFirestore.instance
-          .collection('dollar_sense')
-          .doc(userId)
-          .collection('event')
-          .add({
-        'event_date': event.date,
-        'event_title': event.title,
-      });
+            // Convert the Timestamp to a DateTime object
+            DateTime eventDate = eventTimestamp.toDate();
+            DateTime normalizedDate = _normalizeDate(eventDate);
 
-      setState(() {
-        String dateKey = DateFormat('yyyy-MM-dd').format(event.date);
+            // Initialize the list if it doesn't exist
+            if (_events[normalizedDate] == null) {
+              _events[normalizedDate] = [];
+            }
 
-        if (_events[dateKey] == null) {
-          _events[dateKey] = [event];
-        } else {
-          _events[dateKey]!.add(event);
-        }
-      });
-    }
-  }
+            // Add the event to the list
+            _events[normalizedDate]!.add(Event(
+              id: eventId,
+              title: eventTitle,
+              date: eventDate,
+              reminder: '1 day', // Replace with your actual reminder logic
+            ));
 
-  //delete event from calendar
-  void _deleteNoteFromCalendar(DateTime date, String note) async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('dollar_sense')
-        .doc('events')
-        .collection('events')
-        .where('date', isEqualTo: date)
-        .where('note', isEqualTo: note)
-        .get();
-
-    for (var doc in snapshot.docs) {
-      await doc.reference.delete();
-    }
-
-    setState(() {
-      _notes[date]?.remove(note);
-      if (_notes[date]?.isEmpty ?? false) {
-        _notes.remove(date);
+            print(_events);
+          }
+        });
       }
-    });
+    } catch (e) {
+      print("Error initializing events: $e");
+    }
+  }
+
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  void _addEventToFirestore(Event event) async {
+    try {
+      String username = widget.username;
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .where('username', isEqualTo: username)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('event')
+            .add({
+          'event_date': event.date,
+          'event_title': event.title,
+          'reminder': event.reminder,
+        });
+
+        setState(() {
+          DateTime normalizedDate = _normalizeDate(event.date);
+          if (_events[normalizedDate] == null) {
+            _events[normalizedDate] = [event];
+          } else {
+            _events[normalizedDate]!.add(event);
+          }
+        });
+      }
+    } catch (e) {
+      print("Error adding event to Firestore: $e");
+    }
+  }
+
+  void _deleteEventFromFirestore(Event event) async {
+    try {
+      String username = widget.username;
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('dollar_sense')
+          .where('username', isEqualTo: username)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        String userId = userSnapshot.docs.first.id;
+        QuerySnapshot snapshot = await FirebaseFirestore.instance
+            .collection('dollar_sense')
+            .doc(userId)
+            .collection('event')
+            .where('event_id', isEqualTo: event.id)
+            .get();
+
+        for (var doc in snapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        setState(() {
+          DateTime normalizedDate = _normalizeDate(event.date);
+          _events[normalizedDate]?.remove(event);
+          if (_events[normalizedDate]?.isEmpty ?? false) {
+            _events.remove(normalizedDate);
+          }
+        });
+      }
+    } catch (e) {
+      print("Error deleting event from Firestore: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Color(0xFFEEF4F8),
-          title: Text('Calendar'),
-        ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.arrow_back),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDay = DateTime(
-                        _selectedDay.year,
-                        _selectedDay.month - 1,
-                        _selectedDay.day,
-                      );
-                    });
-                  },
-                ),
-                Text(
-                  //display the month and year
-                  '${DateFormat.yMMMM().format(_selectedDay)}',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: Icon(Icons.arrow_forward),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDay = DateTime(
-                        _selectedDay.year,
-                        _selectedDay.month + 1,
-                        _selectedDay.day,
-                      );
-                    });
-                  },
-                ),
-              ],
-            ),
-            TableCalendar(
-              firstDay: DateTime.utc(2021, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _selectedDay,
-              headerVisible: false,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                });
-                _fetchEventsFromFirestore(selectedDay).then((events) {
-                  setState(() {
-                    _events[DateFormat('yyyy-MM-dd').format(selectedDay)] = events;
-                  });
-                });
-              },
-
-              eventLoader: _getNotesForDay,
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context, date, events) {
-                  if (events.isNotEmpty) {
-                    return Positioned(
-                      bottom: 1,
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.blue,
-                        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Calendar'),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TableCalendar(
+            firstDay: DateTime.utc(2021, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: _selectedDay,
+            headerVisible: false,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+              });
+            },
+            eventLoader: _getEventsForDay,
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, date, events) {
+                if (events.isNotEmpty) {
+                  return Positioned(
+                    bottom: 1,
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
                       ),
-                    );
-                  }
-                  return null;
-                },
+                    ),
+                  );
+                }
+                return null;
+              },
+            ),
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: _buildEventList(),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddCalendarPage(
+                onEventAdded: _addEventToFirestore,
+                username: widget.username,
+                selectedDate: _selectedDay,
               ),
             ),
-            SizedBox(height: 20),
-            Expanded(
-              child: _buildEventList(),
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AddCalendarPage(
-                  onEventAdded: _addNoteToCalendar,
-                  username: widget.username,
-                  selectedDate: _selectedDay,
-                ),
-              ),
-            );
-          },
-          child: Icon(Icons.add),
-        ),
+          );
+        },
+        child: Icon(Icons.add),
       ),
     );
   }
 
-  //event list view
   Widget _buildEventList() {
-    final notes = _getNotesForDay(_selectedDay);
+    final events = _getEventsForDay(_selectedDay);
     return ListView.builder(
-      itemCount: notes.length,
+      itemCount: events.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: Text(notes[index]),
+          title: Text(events[index].title),
           trailing: IconButton(
             icon: Icon(Icons.delete),
             onPressed: () {
-              _deleteNoteFromCalendar(_selectedDay, notes[index]);
+              _deleteEventFromFirestore(events[index]);
             },
           ),
         );
       },
     );
+  }
+
+  List<Event> _getEventsForDay(DateTime day) {
+    return _events[_normalizeDate(day)] ?? [];
   }
 }

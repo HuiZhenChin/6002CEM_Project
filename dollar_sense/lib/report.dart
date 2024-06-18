@@ -238,7 +238,7 @@ class _GraphPageState extends State<GraphPage> {
                   int index = entry.key;
                   var data = entry.value;
 
-                  // Create BarChartGroupData for each category
+                  // create BarChartGroupData for each category
                   return BarChartGroupData(
                     x: index,
                     barsSpace: 16,
@@ -298,7 +298,7 @@ class _GraphPageState extends State<GraphPage> {
                             ),
                           ],
                         ),
-                      // Add a default BarChartRodData with height 0 if all values are 0
+                      // add a default BarChartRodData with height 0 if all values are 0
                       if (data['total_budget']?.toDouble() == 0.0 &&
                           data['total_expenses']?.toDouble() == 0.0 &&
                           data['total_income']?.toDouble() == 0.0 &&
