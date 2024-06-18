@@ -41,10 +41,20 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             ),
             SizedBox(height: 20.0),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                minimumSize: Size(double.infinity, 60),
+              ),
               onPressed: _isLoading ? null : () => _resetPassword(context),
               child: _isLoading
                   ? CircularProgressIndicator()
-                  : Text('Reset Password'),
+                  : Text(
+                      'Reset Password',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -63,7 +73,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       return;
     }
 
-
     setState(() {
       _isLoading = true;
     });
@@ -78,7 +87,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to send password reset email. Please try again later.'),
+        content: Text(
+            'Failed to send password reset email. Please try again later.'),
         backgroundColor: Colors.red,
       ));
     } finally {

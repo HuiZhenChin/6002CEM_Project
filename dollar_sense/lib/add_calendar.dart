@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'event_model.dart';
 
-
 class AddCalendarPage extends StatefulWidget {
   final String username;
   final Function(Event) onEventAdded;
@@ -35,10 +34,13 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
   Future<void> addEvent(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       String title = _eventController.text;
-      DateTime date = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day);
-      String reminder = _selectedReminder == '1 day' ? '1 day' : _customReminder;
+      DateTime date = DateTime(widget.selectedDate.year,
+          widget.selectedDate.month, widget.selectedDate.day);
+      String reminder =
+          _selectedReminder == '1 day' ? '1 day' : _customReminder;
 
-      DocumentReference counterDoc = _firestore.collection('counters').doc('eventCounter');
+      DocumentReference counterDoc =
+          _firestore.collection('counters').doc('eventCounter');
       DocumentSnapshot counterSnapshot = await counterDoc.get();
 
       int newEventId = 1;
@@ -59,7 +61,6 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
       //wait when saving to database
       await _saveEventToFirestore(newEvent, widget.username, context);
 
-
       _eventController.clear();
       widget.onEventAdded(newEvent);
 
@@ -71,7 +72,8 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
   }
 
   //save to Database
-  Future<void> _saveEventToFirestore(Event event, String username, BuildContext context) async {
+  Future<void> _saveEventToFirestore(
+      Event event, String username, BuildContext context) async {
     QuerySnapshot userSnapshot = await _firestore
         .collection('dollar_sense')
         .where('username', isEqualTo: username)
@@ -90,7 +92,7 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
         'event_title': event.title,
         'event_date': event.date,
         'reminder': event.reminder,
-        'type': "Reminder",// Add reminder to Firestore
+        'type': "Reminder", // Add reminder to Firestore
       };
 
       Event newEvent = Event(
@@ -100,11 +102,9 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
         reminder: event.reminder,
       );
 
-      widget.onEventAdded(newEvent);
+      //widget.onEventAdded(newEvent);
 
       await eventCollection.add(eventData);
-
-
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: User not found')),
@@ -114,7 +114,8 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    String givenDate = '${widget.selectedDate.year}-${widget.selectedDate.month}-${widget.selectedDate.day}';
+    String givenDate =
+        '${widget.selectedDate.year}-${widget.selectedDate.month}-${widget.selectedDate.day}';
     return Scaffold(
       appBar: AppBar(
         title: Text('Add Calendar Event'),
@@ -148,8 +149,7 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
                 Text('Reminder:'),
                 DropdownButton<String>(
                   value: _selectedReminder,
-                  items: <String>['1 day', 'Custom']
-                      .map((String value) {
+                  items: <String>['1 day', 'Custom'].map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -181,8 +181,18 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
                 ],
                 SizedBox(height: 20),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    minimumSize: Size(double.infinity, 60),
+                  ),
                   onPressed: () => addEvent(context),
-                  child: Text('Add Event'),
+                  child: Text(
+                    'Add Event',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
