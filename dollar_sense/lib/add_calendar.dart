@@ -81,36 +81,48 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
 
     if (userSnapshot.docs.isNotEmpty) {
       String userId = userSnapshot.docs.first.id;
-      CollectionReference eventCollection = _firestore
+      CollectionReference notificationsCollection = _firestore
           .collection('dollar_sense')
           .doc(userId)
           .collection('notifications');
 
-      //save the event with the details
+      CollectionReference eventsCollection = _firestore
+          .collection('dollar_sense')
+          .doc(userId)
+          .collection('event');
+
+      //save the event with the details to the notifications collection
       Map<String, dynamic> eventData = {
         'event_id': event.id,
         'event_title': event.title,
         'event_date': event.date,
         'reminder': event.reminder,
-        'type': "Reminder", // Add reminder to Firestore
+        'type': "Reminder", //add reminder to Firestore
       };
 
-      Event newEvent = Event(
-        id: event.id,
-        title: event.title,
-        date: event.date,
-        reminder: event.reminder,
+      //save to notifications collection
+      await notificationsCollection.add(eventData);
+
+      //save to event collection
+      await eventsCollection.add({
+        'event_id': event.id,
+        'event_title': event.title,
+        'event_date': event.date,
+        'reminder': event.reminder,
+
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event added to calendar')),
       );
 
-      //widget.onEventAdded(newEvent);
-
-      await eventCollection.add(eventData);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: User not found')),
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

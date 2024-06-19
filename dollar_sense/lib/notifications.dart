@@ -48,9 +48,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
       List<DocumentSnapshot> reminderNotifications = fetchedNotifications
           .where((doc) => doc['type'] == 'Reminder')
           .toList();
-      List<DocumentSnapshot> budgetNotifications = fetchedNotifications
-          .where((doc) => doc['type'] == 'Budget')
-          .toList();
+      List<DocumentSnapshot> budgetNotifications = [];
+
+      for (var doc in fetchedNotifications) {
+        var data = doc.data() as Map<String, dynamic>;
+        if (data.containsKey('category') &&
+            data.containsKey('month') &&
+            data.containsKey('year') &&
+            (data.containsKey('read_first_reminder') || data.containsKey('read_second_reminder'))) {
+          if (data['read_first_reminder'] == false || data['read_second_reminder'] == false) {
+            budgetNotifications.add(doc);
+          }
+        }
+      }
 
       setState(() {
         remindernotifications = reminderNotifications;
@@ -69,18 +79,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
   //mark notification as read
   void _markAsRead(DocumentSnapshot notification) async {
     Map<String, dynamic> data = notification.data() as Map<String, dynamic>;
-
     String documentId = '${data['category']}_${data['month']}_${data['year']}';
     String userId = notification.reference.parent.parent!.id;
 
-    //update both reminders if needed
-    //when user marks as read, will update to true (will not send these notifications again)
+    //update read status based on notification type
     Map<String, dynamic> updates = {};
-    if (data['read_first_reminder'] == false) {
-      updates['read_first_reminder'] = true;
-    }
-    if (data['read_second_reminder'] == false) {
-      updates['read_second_reminder'] = true;
+    if (data['type'] == 'Budget') {
+      if (data['read_first_reminder'] == false) {
+        updates['read_first_reminder'] = true;
+      }
+      if (data['read_second_reminder'] == false) {
+        updates['read_second_reminder'] = true;
+      }
     }
 
     if (updates.isNotEmpty) {
@@ -95,6 +105,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       await fetchNotifications(widget.username);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -190,20 +201,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
             ),
             if (budgetnotifications.isNotEmpty)
-              Text("Budget Notification"),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "Budget Notifications",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            if (budgetnotifications.isNotEmpty)
               Expanded(
                 child: ListView.builder(
                   itemCount: budgetnotifications.length,
                   itemBuilder: (context, index) {
                     var notification = budgetnotifications[index];
                     var data = notification.data() as Map<String, dynamic>;
+                    String message = '';
 
-                    //extracting relevant data
-                    String budget_amount = data['budget_amount'].toString();
-                    String category = data['category'];
-                    String expense_amount = data['expense_amount'].toString();
-                    int month = int.parse(data['month']);
-                    int year = int.parse(data['year']);
+                    if (data['read_first_reminder'] == false) {
+                      message += "${data['category']} : Alert: ${data['budgetNotifications_first_reminder']}% remaining!\n";
+                    }
+                    if (data['read_second_reminder'] == false) {
+                      message += "${data['category']}: Budget Exceeded!";
+                    }
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -214,16 +233,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             Icons.warning,
                             color: Colors.red,
                           ),
-                          title: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Category: $category"),
-                              Text("Month: $month"),
-                              Text("Year: $year"),
-                              Text("Budget: $budget_amount"),
-                              Text("Expense Amount: $expense_amount"),
-                            ],
-                          ),
+                          title: Text(message.trim()),
                           trailing: IconButton(
                             icon: Icon(Icons.check),
                             onPressed: () {

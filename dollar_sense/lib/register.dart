@@ -109,7 +109,6 @@ class _RegisterFormState extends State<RegisterForm> {
         //save user data to database
         await _firestore.collection('dollar_sense').doc(userId).set({
           'email': _email,
-          'password': _password,
           'username': _username,
         });
 

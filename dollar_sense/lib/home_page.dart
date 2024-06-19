@@ -665,20 +665,19 @@ class _HomePageState extends State<HomePage> {
       for (var doc in notificationsSnapshot.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        if (data.containsKey('category') &&
-            data.containsKey('month') &&
-            data.containsKey('year')) {
-          String documentId =
-              '${data['category']}_${data['month']}_${data['year']}';
-
-          if (data.containsKey('read_first_reminder') &&
-              data['read_first_reminder'] == false) {
-            unreadFirstReminderCount++;
-          }
-
-          if (data.containsKey('read_second_reminder') &&
-              data['read_second_reminder'] == false) {
-            unreadSecondReminderCount++;
+        if (data.containsKey('type')) {
+          String type = data['type'];
+          if (type == 'Budget' &&
+              data.containsKey('category') &&
+              data.containsKey('month') &&
+              data.containsKey('year') &&
+              (data.containsKey('read_first_reminder') || data.containsKey('read_second_reminder'))) {
+            if (data['read_first_reminder'] == false) {
+              unreadFirstReminderCount++;
+            }
+            if (data['read_second_reminder'] == false) {
+              unreadSecondReminderCount++;
+            }
           }
         }
       }
@@ -691,6 +690,7 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+
 
   //fetch the current base currency to display in the Home Page
   Future<void> fetchBaseCurrency() async {

@@ -79,38 +79,15 @@ class _CalendarState extends State<Calendar> {
     return DateTime(date.year, date.month, date.day);
   }
 
-  void _addEventToFirestore(Event event) async {
-    try {
-      String username = widget.username;
-      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-          .collection('dollar_sense')
-          .where('username', isEqualTo: username)
-          .get();
-
-      if (userSnapshot.docs.isNotEmpty) {
-        String userId = userSnapshot.docs.first.id;
-        await FirebaseFirestore.instance
-            .collection('dollar_sense')
-            .doc(userId)
-            .collection('event')
-            .add({
-          'event_date': event.date,
-          'event_title': event.title,
-          'reminder': event.reminder,
-        });
-
-        setState(() {
-          DateTime normalizedDate = _normalizeDate(event.date);
-          if (_events[normalizedDate] == null) {
-            _events[normalizedDate] = [event];
-          } else {
-            _events[normalizedDate]!.add(event);
-          }
-        });
+  //add to list
+  void _addEventToState(Event event) {
+    setState(() {
+      DateTime normalizedDate = _normalizeDate(event.date);
+      if (_events[normalizedDate] == null) {
+        _events[normalizedDate] = [];
       }
-    } catch (e) {
-      print("Error adding event to Firestore: $e");
-    }
+      _events[normalizedDate]!.add(event);
+    });
   }
 
   void _deleteEventFromFirestore(Event event) async {
@@ -150,48 +127,52 @@ class _CalendarState extends State<Calendar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // Set the background color of the entire page to white
       appBar: AppBar(
         title: Text('Calendar'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2021, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _selectedDay,
-            headerVisible: false,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-              });
-            },
-            eventLoader: _getEventsForDay,
-            calendarBuilders: CalendarBuilders(
-              markerBuilder: (context, date, events) {
-                if (events.isNotEmpty) {
-                  return Positioned(
-                    bottom: 1,
-                    child: Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  );
-                }
-                return null;
+      body: Container(
+        color: Colors.white, // Ensure the body is also white
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TableCalendar(
+              firstDay: DateTime.utc(2021, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: _selectedDay,
+              headerVisible: false,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                });
               },
+              eventLoader: _getEventsForDay,
+              calendarBuilders: CalendarBuilders(
+                markerBuilder: (context, date, events) {
+                  if (events.isNotEmpty) {
+                    return Positioned(
+                      bottom: 1,
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    );
+                  }
+                  return null;
+                },
+              ),
             ),
-          ),
-          SizedBox(height: 20),
-          Expanded(
-            child: _buildEventList(),
-          ),
-        ],
+            SizedBox(height: 20),
+            Expanded(
+              child: _buildEventList(),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -199,7 +180,7 @@ class _CalendarState extends State<Calendar> {
             context,
             MaterialPageRoute(
               builder: (context) => AddCalendarPage(
-                onEventAdded: _addEventToFirestore,
+                onEventAdded: _addEventToState,
                 username: widget.username,
                 selectedDate: _selectedDay,
               ),

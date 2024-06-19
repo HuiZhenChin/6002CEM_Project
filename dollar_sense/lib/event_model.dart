@@ -27,7 +27,7 @@ class Event {
       'event_id': id,
       'event_title': title,
       'event_date': date,
-
+      'reminder': reminder,
     };
   }
 
