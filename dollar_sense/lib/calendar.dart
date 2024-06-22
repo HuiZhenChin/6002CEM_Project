@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'add_calendar.dart'; // Assuming this is where you define AddCalendarPage
-import 'event_model.dart'; // Assuming this is where you define the Event class
+import 'add_calendar.dart';
+import 'event_model.dart';
 
 class Calendar extends StatefulWidget {
   final String username;
@@ -16,12 +16,14 @@ class Calendar extends StatefulWidget {
 
 class _CalendarState extends State<Calendar> {
   late DateTime _selectedDay;
+  late DateTime _focusedDay;
   Map<DateTime, List<Event>> _events = {};
 
   @override
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
+    _focusedDay = DateTime.now();
     _initializeEvents();
   }
 
@@ -42,14 +44,14 @@ class _CalendarState extends State<Calendar> {
             .get();
 
         setState(() {
-          _events.clear(); // Clear existing events before adding new ones
+          _events.clear(); //clear existing events before adding new ones
 
           for (var doc in eventSnapshot.docs) {
             Timestamp eventTimestamp = doc["event_date"];
             String eventId = doc["event_id"];
             String eventTitle = doc["event_title"];
 
-            // Convert the Timestamp to a DateTime object
+            //convert the Timestamp to a DateTime object
             DateTime eventDate = eventTimestamp.toDate();
             DateTime normalizedDate = _normalizeDate(eventDate);
 
@@ -58,12 +60,12 @@ class _CalendarState extends State<Calendar> {
               _events[normalizedDate] = [];
             }
 
-            // Add the event to the list
+            //add the event to the list
             _events[normalizedDate]!.add(Event(
               id: eventId,
               title: eventTitle,
               date: eventDate,
-              reminder: '1 day', // Replace with your actual reminder logic
+              reminder: '1 day', //replace with your actual reminder logic
             ));
 
             print(_events);
@@ -124,27 +126,60 @@ class _CalendarState extends State<Calendar> {
     }
   }
 
+  void _onPreviousMonth() {
+    setState(() {
+      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+    });
+  }
+
+  void _onNextMonth() {
+    setState(() {
+      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Set the background color of the entire page to white
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Calendar'),
       ),
       body: Container(
-        color: Colors.white, // Ensure the body is also white
+        color: Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back),
+                    onPressed: _onPreviousMonth,
+                  ),
+                  Text(
+                    DateFormat.yMMMM().format(_focusedDay),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.arrow_forward),
+                    onPressed: _onNextMonth,
+                  ),
+                ],
+              ),
+            ),
             TableCalendar(
               firstDay: DateTime.utc(2021, 1, 1),
               lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _selectedDay,
+              focusedDay: _focusedDay,
               headerVisible: false,
               selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
               onDaySelected: (selectedDay, focusedDay) {
                 setState(() {
                   _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
                 });
               },
               eventLoader: _getEventsForDay,
