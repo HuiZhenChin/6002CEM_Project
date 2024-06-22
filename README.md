@@ -33,5 +33,5 @@ Hedgehog 2023.1.1 Patch 2
 15. path_provider: ^2.0.2
 16. url_launcher: ^6.3.0
 17. fl_chart: ^0.35.0
-18.flutter_local_notifications: ^9.0.2
+18. flutter_local_notifications: ^9.0.2
 19. firebase_messaging: ^14.9.4
