@@ -129,6 +129,7 @@ class _AddCalendarPageState extends State<AddCalendarPage> {
     String givenDate =
         '${widget.selectedDate.year}-${widget.selectedDate.month}-${widget.selectedDate.day}';
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Add Calendar Event'),
       ),
