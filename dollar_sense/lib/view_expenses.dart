@@ -392,7 +392,7 @@ class _ViewExpensesPageState extends State<ViewExpensesPage> {
                         onPressed: () {
                           Navigator.pop(context, 'Category (Z-A)');
                         },
-                        child: Text('Category (A-Z)'),
+                        child: Text('Category (Z-A)'),
                       ),
                       SimpleDialogOption(
                         onPressed: () {
