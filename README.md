@@ -1,4 +1,8 @@
-# 6002CEM_Project
+# 6002CEM - Mobile App Development
+
+**Assignment Members:**
+1. Chin Hui Zhen
+2. Peh Jia Xuan
 
 **Name of Application:**
 DollarSense
@@ -8,8 +12,24 @@ DollarSense is a financial management mobile application that allows users to ma
 
 **IDE Name:**
 Android Studio
+
 **IDE Version:**
 Hedgehog 2023.1.1 Patch 2
+
+**Database:**
+Firebase
+
+**Key Features:**
+1. Login
+2. Register Account
+3. Monthly Financial Display
+4. Add Expense, Income, Investment, Budget, Category
+5. Budget and Reminder Notifications
+6. Add Reminder
+7. Report Graphs
+8. Transaction History
+9. Currency Converter
+10. User Profile Management
 
 **API Integrated:**
 1. https://www.exchangerate-api.com (to retrieve current currency exchange rate)
@@ -33,5 +53,13 @@ Hedgehog 2023.1.1 Patch 2
 15. path_provider: ^2.0.2
 16. url_launcher: ^6.3.0
 17. fl_chart: ^0.35.0
-18. flutter_local_notifications: ^9.0.2
-19. firebase_messaging: ^14.9.4
+
+**Additional Steps to Run the Program:**
+To run the DollarSense program:
+1. Install Android Studio and Flutter and Dart plugin.
+2. Clone the repository and open the project folder in Android Studio.
+3. Modify the `android/app/src/main/AndroidManifest.xml` and `android/app/build.gradle` files with necessary packages and dependencies.
+4. Include the Firebase configuration at `android/app/google-services.json` accordingly.
+5. Run `flutter pub get` at Android Studio terminal to install the project dependencies.
+6. Select an Android emulator or connect to an Android device to launch the application.
+7. Launch the program using the Run option at the Android Studio toolbar or run `flutter run` at the terminal.
