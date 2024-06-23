@@ -58,8 +58,8 @@ Additional Steps to Run the Program:
 To run the DollarSense program:
 1. Install Android Studio and Flutter and Dart plugin.
 2. Clone the repository and open the project folder in Android Studio.
-3. Modify the `android/app/src/main/AndroidManifest.xml` and `android/app/build.gradle` files with necessary packages and dependencies.
-4. Include the Firebase configuration at `android/app/google-services.json` accordingly.
-5. Run `flutter pub get` at Android Studio terminal to install the project dependencies.
+3. Modify the android/app/src/main/AndroidManifest.xml and android/app/build.gradle files with necessary packages and dependencies.
+4. Include the Firebase configuration at android/app/google-services.json accordingly.
+5. Run flutter pub get at Android Studio terminal to install the project dependencies.
 6. Select an Android emulator or connect to an Android device to launch the application.
-7. Launch the program using the Run option at the Android Studio toolbar or run `flutter run` at the terminal.
+7. Launch the program using the Run option at the Android Studio toolbar or run flutter run at the terminal.
